@@ -1,5 +1,7 @@
 from rest_framework.permissions import BasePermission
 
+from backend.apps.accounts.models import UserRole
+
 
 class IsAdmin(BasePermission):
 
@@ -21,4 +23,12 @@ class IsAdminOrManager(BasePermission):
         return (
             request.user.is_authenticated
             and request.user.role in self.allowed_roles
+        )
+
+class IsOwnerOrAdmin(BasePermission):
+
+    def has_object_permission(self,request,view,obj,):
+        return (
+            obj == request.user
+            or request.user.role == UserRole.ADMIN
         )

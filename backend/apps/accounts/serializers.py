@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.organizations.models import Organization
 
-from .models import User
+from .models import User, UserRole
 from .services import register_user
 
 
@@ -31,6 +31,43 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+
+class UserCreateSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+
+    first_name = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+    )
+
+    last_name = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+    )
+
+    role = serializers.ChoiceField(
+        choices=UserRole.choices,
+        default=UserRole.MEMBER,
+    )
+
+    def validate_email(self, value):
+        if User.objects.filter(
+            email__iexact=value
+        ).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+            )
+
+        return value
 
 
 class RegisterSerializer(serializers.Serializer):
