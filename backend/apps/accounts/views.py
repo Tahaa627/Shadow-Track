@@ -3,12 +3,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAdmin, IsAdminOrManager
+from .permissions import IsAdmin, IsAdminOrManager, CanManageUser
 from .selectors import get_organization_users
 from .serializers import (
     RegisterSerializer,
     UserCreateSerializer,
     UserSerializer,
+    UserUpdateSerializer,
 )
 from .services import (
     create_user,
@@ -83,7 +84,11 @@ class UserListCreateView(generics.ListCreateAPIView):
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return UserUpdateSerializer
+        return UserSerializer
 
     def get_queryset(self):
         return get_organization_users(
@@ -97,9 +102,14 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
                 IsAdmin(),
             ]
 
+        if self.request.method in ("PUT", "PATCH"):
+            return [
+                IsAuthenticated(),
+                CanManageUser(),
+            ]
+
         return [
             IsAuthenticated(),
-            IsAdminOrManager(),
         ]
 
     def perform_update(self, serializer):

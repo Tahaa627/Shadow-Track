@@ -78,3 +78,4 @@ def deactivate_user(
     )
 
     return user
+

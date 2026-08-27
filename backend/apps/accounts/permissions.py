@@ -1,34 +1,63 @@
 from rest_framework.permissions import BasePermission
 
-from backend.apps.accounts.models import UserRole
+from .models import UserRole
 
 
 class IsAdmin(BasePermission):
+    """
+    Only organization ADMIN users.
+    """
 
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
-            and request.user.role == "ADMIN"
+            and request.user.role == UserRole.ADMIN
         )
 
 
 class IsAdminOrManager(BasePermission):
-
-    allowed_roles = {
-        "ADMIN",
-        "MANAGER",
-    }
+    """
+    ADMIN and MANAGER users.
+    """
 
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
-            and request.user.role in self.allowed_roles
+            and request.user.role in (
+                UserRole.ADMIN,
+                UserRole.MANAGER,
+            )
         )
 
-class IsOwnerOrAdmin(BasePermission):
 
-    def has_object_permission(self,request,view,obj,):
+class CanManageUser(BasePermission):
+    """
+    Controls which users can manage other users.
+
+    ADMIN:
+        Can manage everyone.
+
+    MANAGER:
+        Can manage MEMBER users only.
+
+    MEMBER:
+        Cannot manage other users.
+    """
+
+    def has_permission(self, request, view):
         return (
-            obj == request.user
-            or request.user.role == UserRole.ADMIN
+            request.user.is_authenticated
+            and request.user.role in (
+                UserRole.ADMIN,
+                UserRole.MANAGER,
+            )
         )
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.role == UserRole.ADMIN:
+            return True
+
+        if request.user.role == UserRole.MANAGER:
+            return obj.role == UserRole.MEMBER
+
+        return False

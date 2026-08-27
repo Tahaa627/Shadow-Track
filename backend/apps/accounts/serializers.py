@@ -3,10 +3,10 @@ from rest_framework import serializers
 from apps.organizations.models import Organization
 
 from .models import User, UserRole
-from .services import register_user
 
 
 class UserSerializer(serializers.ModelSerializer):
+    
 
     class Meta:
         model = User
@@ -31,6 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+        
 
 
 class UserCreateSerializer(serializers.Serializer):
@@ -67,6 +68,19 @@ class UserCreateSerializer(serializers.Serializer):
                 "A user with this email already exists."
             )
 
+        return value
+
+    def validate_role(self, value):
+        request = self.context["request"]
+    
+        if (
+            request.user.role == UserRole.MANAGER
+            and value != UserRole.MEMBER
+        ):
+            raise serializers.ValidationError(
+                "Managers can only create members."
+            )
+    
         return value
 
 
@@ -123,3 +137,29 @@ class RegisterSerializer(serializers.Serializer):
         return register_user(
             **validated_data
         )
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = (
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+        )
+
+    def validate_email(self, value):
+        user = self.instance
+
+        if User.objects.filter(
+            email__iexact=value
+        ).exclude(
+            id=user.id
+        ).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+            )
+
+        return value
