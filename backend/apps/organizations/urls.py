@@ -1,20 +1,20 @@
 from django.urls import path
 
-from .views import (
-    OrganizationDetailView,
-    OrganizationListCreateView,
+from .views import (OrganizationListView,
+    OrganizationUpdateView,
 )
 
 
 urlpatterns = [
     path(
         "",
-        OrganizationListCreateView.as_view(),
-        name="organization-list-create",
+        OrganizationListView.as_view(),
+        name="organization-list",
     ),
+
     path(
         "<uuid:pk>/",
-        OrganizationDetailView.as_view(),
-        name="organization-detail",
+        OrganizationUpdateView.as_view(),
+        name="organization-update",
     ),
 ]

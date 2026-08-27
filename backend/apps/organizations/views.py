@@ -1,49 +1,38 @@
-
-
-# Create your views here.
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Organization
 from .permissions import IsAdminOrManager
+from .selectors import get_user_organizations
 from .serializers import OrganizationSerializer
+from .services import update_organization
 
 
-class OrganizationListCreateView(generics.ListCreateAPIView):
+class OrganizationListView(generics.ListAPIView):
     serializer_class = OrganizationSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Organization.objects.filter(
-            users=self.request.user
-        ).distinct()
-
-    def get_permissions(self):
-        if self.request.method == "POST":
-            return [
-                IsAuthenticated(),
-                IsAdminOrManager(),
-            ]
-
-        return [
-            IsAuthenticated(),
-        ]
+        return get_user_organizations(
+            user=self.request.user
+        )
 
 
-class OrganizationDetailView(generics.RetrieveUpdateAPIView):
+class OrganizationUpdateView(generics.UpdateAPIView):
     serializer_class = OrganizationSerializer
 
-    def get_queryset(self):
-        return Organization.objects.filter(
-            users=self.request.user
-        ).distinct()
-
     def get_permissions(self):
-        if self.request.method in ("PUT", "PATCH"):
-            return [
-                IsAuthenticated(),
-                IsAdminOrManager(),
-            ]
-
         return [
             IsAuthenticated(),
+            IsAdminOrManager(),
         ]
+
+    def get_queryset(self):
+        return get_user_organizations(
+            user=self.request.user
+        )
+
+    def perform_update(self, serializer):
+        update_organization(
+            organization=serializer.instance,
+            **serializer.validated_data,
+        )

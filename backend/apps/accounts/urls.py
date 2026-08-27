@@ -8,6 +8,13 @@ from .views import MeView, RegisterView
 
 
 urlpatterns = [
+
+    path(
+        "register/",
+        RegisterView.as_view(),
+        name="register",
+    ),
+
     path(
         "login/",
         TokenObtainPairView.as_view(),
@@ -17,17 +24,12 @@ urlpatterns = [
     path(
         "refresh/",
         TokenRefreshView.as_view(),
-        name="token_refresh",
+        name="refresh",
     ),
 
     path(
         "me/",
         MeView.as_view(),
         name="me",
-    ),
-    path(
-        "register/",
-        RegisterView.as_view(),
-        name="register",
     ),
 ]
