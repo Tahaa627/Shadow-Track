@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.organizations.models import Organization
 
 from .models import User, UserRole
-
+from .services import register_user
 
 class UserSerializer(serializers.ModelSerializer):
     
@@ -134,9 +134,9 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        return register_user(
+        return (register_user(
             **validated_data
-        )
+        ))
 
 class UserUpdateSerializer(serializers.ModelSerializer):
 

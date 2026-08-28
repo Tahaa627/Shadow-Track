@@ -1,42 +1,42 @@
-import Image from "next/image";
+import Button from "@/components/Button";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between p-24">
-      <main className="flex w-full flex-1 flex-col items-center justify-center text-center">
-        <h1 className="text-6xl font-bold">Welcome to Next.js!</h1>
-        <p className="mt-3 text-2xl">Get started by editing <code>src/app/page.tsx</code></p>
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">Find in-depth information about Next.js features and API.</p>
-          </a>
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-          <a
-            href="https://vercel.com/templates/next.js"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Templates &rarr;</h3>
-            <p className="mt-4 text-xl">Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-          <a
-            href="https://vercel.com/new"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">Instantly deploy your Next.js site to a shareable URL with Vercel.</p>
-          </a>
-        </div>  
-      </main>
-    </div>
+    <main className="min-h-screen bg-[var(--color-neutral)] p-10">
+      <div className="mx-auto max-w-4xl space-y-10">
+        <div>
+          <p className="font-mono text-sm text-[var(--color-primary)]">
+            SHADOWAUDIT
+          </p>
+
+          <h1 className="mt-3 font-[var(--font-display)] text-6xl text-[var(--color-text-primary)]">
+            Sovereign Visibility
+          </h1>
+
+          <p className="mt-4 max-w-xl text-[var(--color-text-muted)]">
+            Reconcile expenses, optimize technology spend,
+            and monitor organizational risk.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-4">
+          <Button variant="primary">
+            Request Access
+          </Button>
+
+          <Button variant="outlined">
+            View Demo
+          </Button>
+
+          <Button variant="tertiary">
+            Analyze
+          </Button>
+
+          <Button variant="ghost">
+            Learn More
+          </Button>
+        </div>
+      </div>
+    </main>
   );
 }

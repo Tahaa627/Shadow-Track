@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  /* Core colors */
+  --color-primary: #d4af37;
+  --color-primary-hover: #e2c45a;
+
+  --color-secondary: #9aa3b8;
+  --color-tertiary: #38bdf8;
+
+  --color-neutral: #0a0d14;
+
+  /* Surfaces */
+  --color-surface: #11141d;
+  --color-surface-elevated: #191c26;
+  --color-surface-container: #20232d;
+
+  /* Text */
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #c7c9d1;
+  --color-text-muted: #8d93a3;
+
+  /* Borders */
+  --color-border: #303441;
+  --color-border-strong: #4a4f5c;
+
+  /* Status */
+  --color-success: #6ee7b7;
+  --color-warning: #facc15;
+  --color-danger: #fca5a5;
+
+  /* Typography */
+  --font-ui: var(--font-inter);
+  --font-display: var(--font-newsreader);
+  --font-code: var(--font-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-neutral);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-neutral);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
