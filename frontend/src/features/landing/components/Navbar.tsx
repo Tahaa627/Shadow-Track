@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
+import { ShieldCheck, Menu, X } from "lucide-react";
 import Button from "@/components/Button";
 
 export default function Navbar() {
@@ -24,7 +24,7 @@ export default function Navbar() {
           aria-label="ShadowAudit home"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--color-primary)] text-[var(--color-primary)]">
-            ◈
+            <ShieldCheck size={17}strokeWidth={1.8}aria-hidden="true"/>
           </span>
 
           <span className="font-mono text-sm font-semibold tracking-[0.18em] text-[var(--color-text-primary)]">
@@ -84,7 +84,11 @@ export default function Navbar() {
           onClick={() => setIsOpen((current) => !current)}
         >
           <span className="text-lg">
-            {isOpen ? "×" : "☰"}
+            {isOpen ? (
+            <X size={19} strokeWidth={1.8} aria-hidden="true" />
+            ) : (
+            <Menu size={19} strokeWidth={1.8} aria-hidden="true" />
+            )}
           </span>
         </button>
       </nav>
