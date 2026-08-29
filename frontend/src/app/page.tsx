@@ -3,6 +3,8 @@ import {
   Hero,
   SecuritySection,
   Navbar,
+  FinalCTA,
+  Footer,
 } from "@/features/landing";
 
 export default function HomePage() {
@@ -14,7 +16,10 @@ export default function HomePage() {
         <Hero />
         <Capabilities />
         <SecuritySection />
+        <FinalCTA />
       </main>
+      
+      <Footer />
     </>
   );
 }
