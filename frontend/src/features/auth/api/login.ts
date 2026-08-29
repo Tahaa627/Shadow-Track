@@ -5,14 +5,14 @@ import type {
   LoginResponse,
 } from "../types";
 
-export const login = async (
-  data: LoginRequest,
-): Promise<LoginResponse> => {
+export async function loginUser(
+  payload: LoginRequest,
+): Promise<LoginResponse> {
   return apiRequest<LoginResponse>(
     "/auth/login/",
     {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     },
   );
-};
+}
