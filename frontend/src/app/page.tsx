@@ -1,5 +1,7 @@
 import {
+  Capabilities,
   Hero,
+  SecuritySection,
   Navbar,
 } from "@/features/landing";
 
@@ -10,6 +12,8 @@ export default function HomePage() {
 
       <main>
         <Hero />
+        <Capabilities />
+        <SecuritySection />
       </main>
     </>
   );
