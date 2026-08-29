@@ -2,5 +2,7 @@ export * from "./api/login";
 export * from "./api/register";
 export * from "./api/me";
 export * from "./api/logout";
+export { default as AuthLayout } from "./components/AuthLayout";
+export { default as RegisterForm } from "./components/RegisterForm";
 
 export * from "./types";
