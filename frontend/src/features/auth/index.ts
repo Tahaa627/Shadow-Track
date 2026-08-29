@@ -4,5 +4,5 @@ export * from "./api/me";
 export * from "./api/logout";
 export { default as AuthLayout } from "./components/AuthLayout";
 export { default as RegisterForm } from "./components/RegisterForm";
-
+export { registerUser } from "./api/register";
 export * from "./types";

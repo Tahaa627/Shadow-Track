@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { registerUser } from "../api/register";
 import {
   Eye,
   EyeOff,
@@ -107,29 +108,21 @@ export default function RegisterForm() {
     setIsSubmitting(true);
 
     try {
-      /*
-       * API connection will be added next.
-       *
-       * We intentionally do not store the password anywhere
-       * after the request.
-       */
+        await registerUser(formData);
 
-      console.log({
-        ...formData,
-      });
+        // Registration succeeded.
+        // We will decide the post-registration flow
+        // when authentication is implemented.
 
-      // Temporary delay so the loading state can be tested.
-      await new Promise((resolve) =>
-        setTimeout(resolve, 800),
-      );
-    } catch {
-      setServerError(
-        "Unable to create your account. Please try again.",
-      );
+    } catch (error) {
+        // Django validation handling will be refined next.
+        setServerError(
+          "Unable to create your account. Please check your information and try again.",
+        );
     } finally {
-      setIsSubmitting(false);
+    setIsSubmitting(false);
     }
-  };
+    };
 
   return (
     <form

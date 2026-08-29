@@ -1,13 +1,18 @@
-import api from "@/services/api";
-import type { RegisterRequest, User } from "../types";
+import { apiRequest } from "@/services/api";
 
-export const register = async (
-  data: RegisterRequest
-): Promise<User> => {
-  const response = await api.post<User>(
+import type {
+  RegisterRequest,
+  RegisterResponse,
+} from "../types";
+
+export async function registerUser(
+  payload: RegisterRequest,
+): Promise<RegisterResponse> {
+  return apiRequest<RegisterResponse>(
     "/auth/register/",
-    data
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   );
-
-  return response.data;
-};
+}

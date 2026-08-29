@@ -1,22 +1,18 @@
-import api from "@/services/api";
-import { authStorage } from "@/services/auth";
+import { apiRequest } from "@/services/api";
+
 import type {
   LoginRequest,
   LoginResponse,
 } from "../types";
 
 export const login = async (
-  data: LoginRequest
+  data: LoginRequest,
 ): Promise<LoginResponse> => {
-  const response = await api.post<LoginResponse>(
+  return apiRequest<LoginResponse>(
     "/auth/login/",
-    data
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
   );
-
-  authStorage.setTokens(
-    response.data.access,
-    response.data.refresh
-  );
-
-  return response.data;
 };
