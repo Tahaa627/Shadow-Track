@@ -1,33 +1,149 @@
 // src/services/api.ts
 
+import { authStorage } from "./auth";
+
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8000/api";
 
 interface ApiRequestOptions extends RequestInit {
   body?: BodyInit | null;
+}
+
+interface RefreshResponse {
+  access: string;
+}
+
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = authStorage.getRefreshToken();
+
+  if (!refreshToken) {
+    throw new Error("No refresh token available.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/auth/refresh/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        refresh: refreshToken,
+      }),
+    },
+  );
+
+  const data =
+    (await response.json().catch(() => null)) as
+      | RefreshResponse
+      | null;
+
+  if (!response.ok || !data?.access) {
+    authStorage.clearTokens();
+    throw new Error("Session expired.");
+  }
+
+  authStorage.setTokens(
+    data.access,
+    refreshToken,
+  );
+
+  return data.access;
 }
 
 export async function apiRequest<T>(
   endpoint: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const response = await fetch(
+  const response = await makeRequest(
+    endpoint,
+    options,
+    authStorage.getAccessToken(),
+  );
+
+  if (response.status === 401) {
+    try {
+      /*
+       * If several requests expire at the same time,
+       * they share the same refresh request.
+       */
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(
+          () => {
+            refreshPromise = null;
+          },
+        );
+      }
+
+      const newAccessToken = await refreshPromise;
+
+      const retryResponse = await makeRequest(
+        endpoint,
+        options,
+        newAccessToken,
+      );
+
+      return await handleResponse<T>(
+        retryResponse,
+      );
+    } catch {
+      authStorage.clearTokens();
+
+      throw new ApiError(
+        { detail: "Your session has expired." },
+        401,
+      );
+    }
+  }
+
+  return handleResponse<T>(response);
+}
+
+async function makeRequest(
+  endpoint: string,
+  options: ApiRequestOptions,
+  accessToken: string | null,
+): Promise<Response> {
+  const headers = new Headers(options.headers);
+
+  headers.set(
+    "Content-Type",
+    "application/json",
+  );
+
+  if (accessToken) {
+    headers.set(
+      "Authorization",
+      `Bearer ${accessToken}`,
+    );
+  }
+
+  return fetch(
     `${API_BASE_URL}${endpoint}`,
     {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
       credentials: "include",
     },
   );
+}
 
-  const data = await response.json().catch(() => null);
+async function handleResponse<T>(
+  response: Response,
+): Promise<T> {
+  const data = await response
+    .json()
+    .catch(() => null);
 
   if (!response.ok) {
     throw new ApiError(
-      data ?? { detail: "Something went wrong." },
+      data ?? {
+        detail: "Something went wrong.",
+      },
       response.status,
     );
   }
@@ -39,8 +155,12 @@ export class ApiError extends Error {
   status: number;
   data: unknown;
 
-  constructor(data: unknown, status: number) {
+  constructor(
+    data: unknown,
+    status: number,
+  ) {
     super("API request failed");
+
     this.name = "ApiError";
     this.status = status;
     this.data = data;

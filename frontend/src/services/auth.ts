@@ -31,4 +31,9 @@ export const authStorage = {
   isAuthenticated(): boolean {
     return Boolean(this.getAccessToken());
   },
+  logout(): void {
+    if (typeof window === "undefined") return;
+
+    this.clearTokens();
+  },
 };

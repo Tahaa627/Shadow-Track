@@ -7,4 +7,5 @@ export { default as RegisterForm } from "./components/RegisterForm";
 export { default as LoginForm } from "./components/LoginForm";
 export { registerUser } from "./api/register";
 export { loginUser } from "./api/login";
+export { getCurrentUser } from "./api/me";
 export * from "./types";

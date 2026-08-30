@@ -2,78 +2,75 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  getCurrentUser,
-  login as loginApi,
-  logout as logoutApi,
-} from "@/features/auth";
-
-import type {
-  LoginRequest,
-  LoginResponse,
-  User,
-} from "@/features/auth/types";
-
+import { getCurrentUser } from "@/features/auth";
 import { authStorage } from "@/services/auth";
 
-interface UseAuthReturn {
+import type { User } from "@/features/auth/types";
+
+interface AuthState {
   user: User | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
-  login: (data: LoginRequest) => Promise<LoginResponse>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
+  isAuthenticated: boolean;
 }
 
-export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function useAuth() {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isLoading: true,
+    isAuthenticated: false,
+  });
 
-  const refreshUser = useCallback(async () => {
+  const loadUser = useCallback(async () => {
     const token = authStorage.getAccessToken();
 
     if (!token) {
-      setUser(null);
-      setIsLoading(false);
+      setState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
+
       return;
     }
 
     try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
+      const user = await getCurrentUser();
+
+      setState({
+        user,
+        isLoading: false,
+        isAuthenticated: true,
+      });
     } catch {
       authStorage.clearTokens();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+
+      setState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
     }
   }, []);
 
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    loadUser();
+  }, [loadUser]);
 
-  const login = async (
-    data: LoginRequest
-  ): Promise<LoginResponse> => {
-    const response = await loginApi(data);
+  const logout = useCallback(() => {
+    authStorage.logout();
 
-    await refreshUser();
+    setState({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
 
-    return response;
-  };
-
-  const logout = (): void => {
-    logoutApi();
-    setUser(null);
-  };
+    window.location.href = "/login";
+  }, []);
 
   return {
-    user,
-    isAuthenticated: Boolean(user),
-    isLoading,
-    login,
+    ...state,
     logout,
-    refreshUser,
+    refreshUser: loadUser,
   };
 }
