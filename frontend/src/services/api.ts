@@ -1,7 +1,7 @@
 // src/services/api.ts
 
 import { authStorage } from "./auth";
-
+// Define the base URL for the API
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8000/api";

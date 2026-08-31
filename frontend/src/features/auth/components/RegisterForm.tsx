@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { registerUser } from "../api/register";
-import { Eye, EyeOff, LockKeyhole, Mail, Building2, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import {
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  Building2,
+  User,
+} from "lucide-react";
 
+import { registerUser } from "../api/register";
 import Button from "@/components/Button";
 import { ApiError } from "@/services/api";
 
@@ -17,99 +26,152 @@ interface RegisterFormData {
   last_name: string;
 }
 
-interface FieldErrors {
-  [key: string]: string | undefined;
-}
-
 export default function RegisterForm() {
-  const [formData, setFormData] = useState<RegisterFormData>({
-    organization_name: "",
-    organization_slug: "",
-    email: "",
-    password: "",
-    first_name: "",
-    last_name: "",
+  const router = useRouter();
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [serverError, setServerError] =
+    useState("");
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<RegisterFormData>({
+    defaultValues: {
+      organization_name: "",
+      organization_slug: "",
+      email: "",
+      password: "",
+      first_name: "",
+      last_name: "",
+    },
+    mode: "onBlur",
   });
 
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [serverError, setServerError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const updateField = (field: keyof RegisterFormData, value: string) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setErrors((current) => ({
-      ...current,
-      [field]: undefined,
-    }));
-
+  const onSubmit = async (
+    data: RegisterFormData,
+  ) => {
     setServerError("");
-  };
-
-  const validate = () => {
-    const newErrors: FieldErrors = {};
-
-    if (!formData.organization_name.trim()) {
-      newErrors.organization_name = "Organization name is required.";
-    }
-
-    if (!formData.organization_slug.trim()) {
-      newErrors.organization_slug = "Organization slug is required.";
-    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(formData.organization_slug)) {
-      newErrors.organization_slug = "Use lowercase letters, numbers, and hyphens only.";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required.";
-    }
-
-    if (formData.password.length < 8) {
-      newErrors.password = "Password must contain at least 8 characters.";
-    }
-
-    return newErrors;
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setServerError("");
-
-    const validationErrors = validate();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
+    clearErrors();
 
     try {
-      await registerUser(formData);
-      // Registration succeeded.
-      // We will decide the post-registration flow
-      // when authentication is implemented.
+      await registerUser(data);
+
+      /*
+       * Registration succeeded.
+       *
+       * We redirect to login and tell the login
+       * page that registration was successful.
+       */
+      router.push("/login?registered=true");
     } catch (error) {
-      // Django validation handling will be refined next.
-      setServerError(
-        "Unable to create your account. Please check your information and try again."
+      console.error(
+        "Registration error:",
+        error,
       );
-      console.error("Registration error:", error);
 
       if (error instanceof ApiError) {
-        console.error("Status:", error.status);
-        console.error("Data:", error.data);
+        const apiData = error.data;
+
+        /*
+         * Django/DRF usually returns:
+         *
+         * {
+         *   "email": ["A user with this email already exists."]
+         * }
+         */
+
+        if (
+          typeof apiData === "object" &&
+          apiData !== null
+        ) {
+          const data =
+            apiData as Record<
+              string,
+              unknown
+            >;
+
+          let handledFieldError = false;
+
+          for (const field of [
+            "organization_name",
+            "organization_slug",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+          ]) {
+            const value = data[field];
+
+            if (Array.isArray(value)) {
+              const message =
+                value.find(
+                  (item) =>
+                    typeof item === "string",
+                );
+
+              if (typeof message === "string") {
+                setError(
+                  field as keyof RegisterFormData,
+                  {
+                    type: "server",
+                    message,
+                  },
+                );
+
+                handledFieldError = true;
+              }
+            }
+          }
+
+          /*
+           * Handle non-field/detail errors.
+           */
+          if (
+            typeof data.detail === "string"
+          ) {
+            setServerError(data.detail);
+            return;
+          }
+
+          /*
+           * If Django returned field errors,
+           * don't show a generic error as well.
+           */
+          if (handledFieldError) {
+            return;
+          }
+        }
+
+        setServerError(
+          "Unable to create your account. Please try again.",
+        );
+
+        return;
       }
-    } finally {
-      setIsSubmitting(false);
+
+      setServerError(
+        "Something went wrong. Please try again.",
+      );
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="space-y-5"
+    >
+      {/* Server error */}
+
       {serverError && (
         <div
           role="alert"
@@ -120,6 +182,7 @@ export default function RegisterForm() {
       )}
 
       {/* Organization */}
+
       <div>
         <FieldLabel
           htmlFor="organization_name"
@@ -129,19 +192,38 @@ export default function RegisterForm() {
 
         <input
           id="organization_name"
-          name="organization_name"
           type="text"
           autoComplete="organization"
-          value={formData.organization_name}
-          onChange={(event) => updateField("organization_name", event.target.value)}
           placeholder="Acme Corporation"
-          className={inputClass(!!errors.organization_name)}
+          aria-invalid={
+            !!errors.organization_name
+          }
+          className={inputClass(
+            !!errors.organization_name,
+          )}
+          {...register(
+            "organization_name",
+            {
+              required:
+                "Organization name is required.",
+              maxLength: {
+                value: 255,
+                message:
+                  "Organization name cannot exceed 255 characters.",
+              },
+            },
+          )}
         />
 
-        <FieldError message={errors.organization_name} />
+        <FieldError
+          message={
+            errors.organization_name?.message
+          }
+        />
       </div>
 
       {/* Organization slug */}
+
       <div>
         <FieldLabel
           htmlFor="organization_slug"
@@ -149,130 +231,247 @@ export default function RegisterForm() {
           icon={<Building2 size={14} />}
         />
 
-        <div className="flex rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-primary)]">
+        <div
+          className={`flex rounded-md border bg-[var(--color-surface)] focus-within:border-[var(--color-primary)] ${
+            errors.organization_slug
+              ? "border-[var(--color-danger)]"
+              : "border-[var(--color-border)]"
+          }`}
+        >
           <span className="flex items-center border-r border-[var(--color-border)] px-3 font-mono text-xs text-[var(--color-text-muted)]">
             shadowaudit/
           </span>
 
           <input
             id="organization_slug"
-            name="organization_slug"
             type="text"
             autoComplete="off"
-            value={formData.organization_slug}
-            onChange={(event) =>
-              updateField("organization_slug", event.target.value.toLowerCase())
-            }
             placeholder="acme"
+            aria-invalid={
+              !!errors.organization_slug
+            }
             className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+            {...register(
+              "organization_slug",
+              {
+                required:
+                  "Organization slug is required.",
+                maxLength: {
+                  value: 255,
+                  message:
+                    "Organization slug cannot exceed 255 characters.",
+                },
+                pattern: {
+                  value:
+                    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                  message:
+                    "Use lowercase letters, numbers, and hyphens only.",
+                },
+              },
+            )}
           />
         </div>
 
-        <FieldError message={errors.organization_slug} />
+        <FieldError
+          message={
+            errors.organization_slug?.message
+          }
+        />
       </div>
 
       {/* Name */}
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <FieldLabel htmlFor="first_name" label="First name" icon={<User size={14} />} />
+          <FieldLabel
+            htmlFor="first_name"
+            label="First name"
+            icon={<User size={14} />}
+          />
 
           <input
             id="first_name"
-            name="first_name"
             type="text"
             autoComplete="given-name"
-            value={formData.first_name}
-            onChange={(event) => updateField("first_name", event.target.value)}
             placeholder="John"
             className={inputClass(false)}
+            {...register("first_name", {
+              maxLength: {
+                value: 100,
+                message:
+                  "First name cannot exceed 100 characters.",
+              },
+            })}
+          />
+
+          <FieldError
+            message={
+              errors.first_name?.message
+            }
           />
         </div>
 
         <div>
-          <FieldLabel htmlFor="last_name" label="Last name" />
+          <FieldLabel
+            htmlFor="last_name"
+            label="Last name"
+          />
 
           <input
             id="last_name"
-            name="last_name"
             type="text"
             autoComplete="family-name"
-            value={formData.last_name}
-            onChange={(event) => updateField("last_name", event.target.value)}
             placeholder="Doe"
             className={inputClass(false)}
+            {...register("last_name", {
+              maxLength: {
+                value: 100,
+                message:
+                  "Last name cannot exceed 100 characters.",
+              },
+            })}
+          />
+
+          <FieldError
+            message={
+              errors.last_name?.message
+            }
           />
         </div>
       </div>
 
       {/* Email */}
+
       <div>
-        <FieldLabel htmlFor="email" label="Work email" icon={<Mail size={14} />} />
+        <FieldLabel
+          htmlFor="email"
+          label="Work email"
+          icon={<Mail size={14} />}
+        />
 
         <input
           id="email"
-          name="email"
           type="email"
           autoComplete="email"
-          value={formData.email}
-          onChange={(event) => updateField("email", event.target.value)}
           placeholder="john@company.com"
-          className={inputClass(!!errors.email)}
+          aria-invalid={!!errors.email}
+          className={inputClass(
+            !!errors.email,
+          )}
+          {...register("email", {
+            required: "Email is required.",
+            pattern: {
+              value:
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message:
+                "Please enter a valid email address.",
+            },
+          })}
         />
 
-        <FieldError message={errors.email} />
+        <FieldError
+          message={errors.email?.message}
+        />
       </div>
 
       {/* Password */}
+
       <div>
-        <FieldLabel htmlFor="password" label="Password" icon={<LockKeyhole size={14} />} />
+        <FieldLabel
+          htmlFor="password"
+          label="Password"
+          icon={<LockKeyhole size={14} />}
+        />
 
         <div
           className={`flex rounded-md border bg-[var(--color-surface)] transition-colors focus-within:border-[var(--color-primary)] ${
-            errors.password ? "border-[var(--color-danger)]" : "border-[var(--color-border)]"
+            errors.password
+              ? "border-[var(--color-danger)]"
+              : "border-[var(--color-border)]"
           }`}
         >
           <input
             id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
+            type={
+              showPassword
+                ? "text"
+                : "password"
+            }
             autoComplete="new-password"
-            value={formData.password}
-            onChange={(event) => updateField("password", event.target.value)}
             placeholder="Minimum 8 characters"
+            aria-invalid={
+              !!errors.password
+            }
             className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+            {...register("password", {
+              required:
+                "Password is required.",
+              minLength: {
+                value: 8,
+                message:
+                  "Password must contain at least 8 characters.",
+              },
+            })}
           />
 
           <button
             type="button"
-            onClick={() => setShowPassword((current) => !current)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            onClick={() =>
+              setShowPassword(
+                (current) => !current,
+              )
+            }
+            aria-label={
+              showPassword
+                ? "Hide password"
+                : "Show password"
+            }
             className="px-3 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
           >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showPassword ? (
+              <EyeOff size={16} />
+            ) : (
+              <Eye size={16} />
+            )}
           </button>
         </div>
 
-        <FieldError message={errors.password} />
+        <FieldError
+          message={errors.password?.message}
+        />
       </div>
 
       {/* Submit */}
+
       <div className="pt-2">
-        <Button type="submit" variant="primary" size="lg" fullWidth loading={isSubmitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={isSubmitting}
+        >
           Create Organization
         </Button>
       </div>
 
       {/* Login */}
+
       <p className="text-center text-xs text-[var(--color-text-muted)]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[var(--color-primary)] hover:underline">
+        <Link
+          href="/login"
+          className="text-[var(--color-primary)] hover:underline"
+        >
           Sign in
         </Link>
       </p>
 
       {/* Security notice */}
+
       <p className="text-center text-[10px] leading-5 text-[var(--color-text-muted)]">
-        By continuing, you agree to the ShadowAudit terms and privacy policy.
+        By continuing, you agree to the
+        ShadowAudit terms and privacy policy.
       </p>
     </form>
   );
@@ -293,21 +492,39 @@ function FieldLabel({
       className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
     >
       {icon && (
-        <span className="text-[var(--color-text-muted)]" aria-hidden="true">
+        <span
+          className="text-[var(--color-text-muted)]"
+          aria-hidden="true"
+        >
           {icon}
         </span>
       )}
+
       {label}
     </label>
   );
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({
+  message,
+}: {
+  message?: string;
+}) {
   if (!message) return null;
-  return <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">{message}</p>;
+
+  return (
+    <p
+      role="alert"
+      className="mt-1.5 text-[10px] text-[var(--color-danger)]"
+    >
+      {message}
+    </p>
+  );
 }
 
-function inputClass(hasError: boolean) {
+function inputClass(
+  hasError: boolean,
+) {
   return `
     w-full
     rounded-md
@@ -321,6 +538,10 @@ function inputClass(hasError: boolean) {
     transition-colors
     placeholder:text-[var(--color-text-muted)]
     focus:border-[var(--color-primary)]
-    ${hasError ? "border-[var(--color-danger)]" : "border-[var(--color-border)]"}
+    ${
+      hasError
+        ? "border-[var(--color-danger)]"
+        : "border-[var(--color-border)]"
+    }
   `.trim();
 }
