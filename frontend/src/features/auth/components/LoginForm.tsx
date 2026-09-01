@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
 import {
   Eye,
   EyeOff,
@@ -11,102 +13,166 @@ import {
 
 import Button from "@/components/Button";
 import { loginUser } from "../api/login";
+import { ApiError } from "@/services/api";
 
 interface LoginFormData {
   email: string;
   password: string;
 }
 
-interface FieldErrors {
-  email?: string;
-  password?: string;
-}
-
 export default function LoginForm() {
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
-    password: "",
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const registered =
+    searchParams?.get("registered") === "true";
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [serverError, setServerError] =
+    useState("");
+
+  const {
+    register,
+    handleSubmit,
+    clearErrors,
+    setError,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<LoginFormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: "onBlur",
   });
 
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [serverError, setServerError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const updateField = (
-    field: keyof LoginFormData,
-    value: string,
+  const onSubmit = async (
+    data: LoginFormData,
   ) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setErrors((current) => ({
-      ...current,
-      [field]: undefined,
-    }));
-
     setServerError("");
-  };
-
-  const validate = (): FieldErrors => {
-    const newErrors: FieldErrors = {};
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required.";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Password is required.";
-    }
-
-    return newErrors;
-  };
-
-  const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-
-    setServerError("");
-
-    const validationErrors = validate();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
+    clearErrors();
 
     try {
-      await loginUser(formData);
+      await loginUser(data);
 
       /*
-       * Authentication state will be handled by the secure
-       * session layer.
+       * loginUser is responsible for the
+       * authentication/session handling.
        *
-       * We intentionally do not store credentials or tokens
-       * in localStorage/sessionStorage here.
+       * The form only handles the UI flow.
        */
 
-      window.location.href = "/dashboard";
-    } catch {
-      setServerError(
-        "Invalid email or password. Please try again.",
+      router.replace("/dashboard");
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error,
       );
-    } finally {
-      setIsSubmitting(false);
+
+      if (error instanceof ApiError) {
+        const apiData = error.data;
+
+        /*
+         * Handle Django/DRF field errors.
+         */
+        if (
+          typeof apiData === "object" &&
+          apiData !== null
+        ) {
+          const data =
+            apiData as Record<
+              string,
+              unknown
+            >;
+
+          const emailError = getErrorMessage(
+            data.email,
+          );
+
+          const passwordError =
+            getErrorMessage(data.password);
+
+          if (emailError) {
+            setError("email", {
+              type: "server",
+              message: emailError,
+            });
+          }
+
+          if (passwordError) {
+            setError("password", {
+              type: "server",
+              message: passwordError,
+            });
+          }
+
+          /*
+           * Authentication errors such as:
+           *
+           * {
+           *   "detail":
+           *   "No active account found..."
+           * }
+           *
+           * are shown as a generic authentication
+           * message to avoid revealing whether
+           * an email account exists.
+           */
+          if (
+            typeof data.detail === "string"
+          ) {
+            setServerError(
+              "Invalid email or password. Please try again.",
+            );
+
+            return;
+          }
+
+          if (
+            emailError ||
+            passwordError
+          ) {
+            return;
+          }
+        }
+      }
+
+      setServerError(
+        "Unable to sign in. Please try again.",
+      );
     }
   };
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       noValidate
       className="space-y-5"
     >
+      {/* Registration success */}
+
+      {registered && (
+        <div
+          role="status"
+          className="rounded-md border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/5 px-4 py-3 text-xs text-[var(--color-primary)]"
+        >
+          <p className="font-medium">
+            Account created successfully.
+          </p>
+
+          <p className="mt-1 opacity-80">
+            Your account is ready. Please sign
+            in to continue.
+          </p>
+        </div>
+      )}
+
+      {/* Server error */}
+
       {serverError && (
         <div
           role="alert"
@@ -117,6 +183,7 @@ export default function LoginForm() {
       )}
 
       {/* Email */}
+
       <div>
         <label
           htmlFor="email"
@@ -127,30 +194,38 @@ export default function LoginForm() {
             className="text-[var(--color-text-muted)]"
             aria-hidden="true"
           />
+
           Work email
         </label>
 
         <input
           id="email"
-          name="email"
           type="email"
           autoComplete="email"
-          value={formData.email}
-          onChange={(event) =>
-            updateField("email", event.target.value)
-          }
           placeholder="john@company.com"
-          className={inputClass(!!errors.email)}
+          aria-invalid={!!errors.email}
+          className={inputClass(
+            !!errors.email,
+          )}
+          {...register("email", {
+            required:
+              "Email is required.",
+            pattern: {
+              value:
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message:
+                "Please enter a valid email address.",
+            },
+          })}
         />
 
-        {errors.email && (
-          <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">
-            {errors.email}
-          </p>
-        )}
+        <FieldError
+          message={errors.email?.message}
+        />
       </div>
 
       {/* Password */}
+
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label
@@ -162,6 +237,7 @@ export default function LoginForm() {
               className="text-[var(--color-text-muted)]"
               aria-hidden="true"
             />
+
             Password
           </label>
 
@@ -182,31 +258,36 @@ export default function LoginForm() {
         >
           <input
             id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            value={formData.password}
-            onChange={(event) =>
-              updateField(
-                "password",
-                event.target.value,
-              )
+            type={
+              showPassword
+                ? "text"
+                : "password"
             }
+            autoComplete="current-password"
             placeholder="Enter your password"
+            aria-invalid={
+              !!errors.password
+            }
             className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+            {...register("password", {
+              required:
+                "Password is required.",
+            })}
           />
 
           <button
             type="button"
             onClick={() =>
-              setShowPassword((current) => !current)
+              setShowPassword(
+                (current) => !current,
+              )
             }
             aria-label={
               showPassword
                 ? "Hide password"
                 : "Show password"
             }
-            className="px-3 text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+            className="px-3 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
           >
             {showPassword ? (
               <EyeOff size={16} />
@@ -216,14 +297,13 @@ export default function LoginForm() {
           </button>
         </div>
 
-        {errors.password && (
-          <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">
-            {errors.password}
-          </p>
-        )}
+        <FieldError
+          message={errors.password?.message}
+        />
       </div>
 
       {/* Submit */}
+
       <div className="pt-2">
         <Button
           type="submit"
@@ -235,6 +315,8 @@ export default function LoginForm() {
           Sign In
         </Button>
       </div>
+
+      {/* Register */}
 
       <p className="text-center text-xs text-[var(--color-text-muted)]">
         Don't have an account?{" "}
@@ -249,7 +331,26 @@ export default function LoginForm() {
   );
 }
 
-function inputClass(hasError: boolean) {
+function FieldError({
+  message,
+}: {
+  message?: string;
+}) {
+  if (!message) return null;
+
+  return (
+    <p
+      role="alert"
+      className="mt-1.5 text-[10px] text-[var(--color-danger)]"
+    >
+      {message}
+    </p>
+  );
+}
+
+function inputClass(
+  hasError: boolean,
+) {
   return `
     w-full
     rounded-md
@@ -267,5 +368,21 @@ function inputClass(hasError: boolean) {
         ? "border-[var(--color-danger)]"
         : "border-[var(--color-border)]"
     }
-  `;
+  `.trim();
+}
+
+function getErrorMessage(
+  value: unknown,
+): string | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const message = value.find(
+    (item) => typeof item === "string",
+  );
+
+  return typeof message === "string"
+    ? message
+    : undefined;
 }

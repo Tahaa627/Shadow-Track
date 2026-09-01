@@ -32,6 +32,32 @@ class AuthFlowTests(TestCase):
         self.assertIn("access", response.data["tokens"])
         self.assertIn("refresh", response.data["tokens"])
 
+    def test_register_rejects_existing_email(self):
+        organization = Organization.objects.create(
+            name="Existing Org",
+            slug="existing-org",
+        )
+
+        self.user_model.objects.create_user(
+            email="duplicate@example.com",
+            password="secret123",
+            organization=organization,
+        )
+
+        response = self.client.post(
+            reverse("register"),
+            {
+                "organization_name": "New Org",
+                "organization_slug": "new-org",
+                "email": "duplicate@example.com",
+                "password": "secret123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("A user with this email already exists.", str(response.data))
+
     def test_login_endpoint_accepts_email_for_authentication(self):
         organization = Organization.objects.create(
             name="Login Org",
@@ -55,3 +81,39 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
+
+    def test_login_rejects_invalid_credentials_with_standard_message(self):
+        organization = Organization.objects.create(
+            name="Invalid Org",
+            slug="invalid-org",
+        )
+
+        self.user_model.objects.create_user(
+            email="valid@example.com",
+            password="correct-pass",
+            organization=organization,
+        )
+
+        response = self.client.post(
+            reverse("login"),
+            {"email": "valid@example.com", "password": "wrong-pass"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "No active account found with the given credentials.",
+            str(response.data),
+        )
+
+        missing_user_response = self.client.post(
+            reverse("login"),
+            {"email": "missing@example.com", "password": "wrong-pass"},
+            format="json",
+        )
+
+        self.assertEqual(missing_user_response.status_code, 400)
+        self.assertIn(
+            "No active account found with the given credentials.",
+            str(missing_user_response.data),
+        )

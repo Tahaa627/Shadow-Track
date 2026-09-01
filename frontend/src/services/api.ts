@@ -16,6 +16,16 @@ interface RefreshResponse {
 
 let refreshPromise: Promise<string> | null = null;
 
+function redirectToLogin() {
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+
+    if (!pathname.startsWith("/login")) {
+      window.location.assign("/login");
+    }
+  }
+}
+
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = authStorage.getRefreshToken();
 
@@ -43,7 +53,7 @@ async function refreshAccessToken(): Promise<string> {
       | null;
 
   if (!response.ok || !data?.access) {
-    authStorage.clearTokens();
+    handleExpiredSession();
     throw new Error("Session expired.");
   }
 
@@ -91,7 +101,7 @@ export async function apiRequest<T>(
         retryResponse,
       );
     } catch {
-      authStorage.clearTokens();
+      handleExpiredSession();
 
       throw new ApiError(
         { detail: "Your session has expired." },
@@ -101,6 +111,11 @@ export async function apiRequest<T>(
   }
 
   return handleResponse<T>(response);
+}
+
+function handleExpiredSession() {
+  authStorage.clearTokens();
+  redirectToLogin();
 }
 
 async function makeRequest(

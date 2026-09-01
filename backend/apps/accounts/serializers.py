@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.organizations.models import Organization
+from apps.organizations.serializers import OrganizationSerializer
 
 from .models import User, UserRole
 from .services import register_user
@@ -35,7 +36,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    
+    organization = OrganizationSerializer(read_only=True)
 
     class Meta:
         model = User

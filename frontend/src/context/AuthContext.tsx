@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth";
 import { authStorage } from "@/services/auth";
@@ -34,6 +35,7 @@ interface AuthProviderProps {
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(
     null,
   );
@@ -71,9 +73,8 @@ export function AuthProvider({
   const logout = useCallback(() => {
     authStorage.clearTokens();
     setUser(null);
-
-    window.location.href = "/login";
-  }, []);
+    router.replace("/login");
+  }, [router]);
 
   const value = useMemo(
     () => ({

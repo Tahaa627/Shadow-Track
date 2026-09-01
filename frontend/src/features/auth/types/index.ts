@@ -1,9 +1,18 @@
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  organization: string | null;
+  organization: Organization | null;
   role: "ADMIN" | "MANAGER" | "MEMBER";
   is_active: boolean;
   created_at: string;
@@ -25,15 +34,11 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  organization: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  user: User;
+  tokens: {
+    access: string;
+    refresh: string;
+  };
 }
 
 export interface AuthTokens {
