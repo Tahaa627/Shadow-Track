@@ -1,5 +1,7 @@
 // src/services/api.ts
 
+import { refreshToken } from "@/features/auth/api/refresh";
+
 import { authStorage } from "./auth";
 // Define the base URL for the API
 const API_BASE_URL =
@@ -8,10 +10,6 @@ const API_BASE_URL =
 
 interface ApiRequestOptions extends RequestInit {
   body?: BodyInit | null;
-}
-
-interface RefreshResponse {
-  access: string;
 }
 
 let refreshPromise: Promise<string> | null = null;
@@ -27,42 +25,8 @@ function redirectToLogin() {
 }
 
 async function refreshAccessToken(): Promise<string> {
-  const refreshToken = authStorage.getRefreshToken();
-
-  if (!refreshToken) {
-    throw new Error("No refresh token available.");
-  }
-
-  const response = await fetch(
-    `${API_BASE_URL}/auth/refresh/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        refresh: refreshToken,
-      }),
-    },
-  );
-
-  const data =
-    (await response.json().catch(() => null)) as
-      | RefreshResponse
-      | null;
-
-  if (!response.ok || !data?.access) {
-    handleExpiredSession();
-    throw new Error("Session expired.");
-  }
-
-  authStorage.setTokens(
-    data.access,
-    refreshToken,
-  );
-
-  return data.access;
+  const { access } = await refreshToken();
+  return access;
 }
 
 export async function apiRequest<T>(
