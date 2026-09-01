@@ -10,7 +10,10 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { getCurrentUser } from "@/features/auth";
+import {
+  getCurrentUser,
+  logoutUser,
+} from "@/features/auth";
 import { authStorage } from "@/services/auth";
 
 import type { User } from "@/features/auth/types";
@@ -71,7 +74,7 @@ export function AuthProvider({
   }, [refreshUser]);
 
   const logout = useCallback(() => {
-    authStorage.clearTokens();
+    logoutUser();
     setUser(null);
     router.replace("/login");
   }, [router]);
