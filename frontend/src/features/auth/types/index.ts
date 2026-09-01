@@ -7,7 +7,7 @@ export interface Organization {
   updated_at: string;
 }
 
-export interface User {
+export interface CurrentUser {
   id: string;
   email: string;
   first_name: string;
@@ -18,6 +18,8 @@ export interface User {
   created_at: string;
   updated_at: string;
 }
+
+export type User = CurrentUser;
 
 export interface LoginRequest {
   email: string;

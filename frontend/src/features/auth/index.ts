@@ -1,5 +1,6 @@
 export * from "./api/login";
 export * from "./api/register";
+export * from "./api/getMe";
 export * from "./api/me";
 export * from "./api/logout";
 export { default as AuthLayout } from "./components/AuthLayout";
@@ -8,4 +9,5 @@ export { default as LoginForm } from "./components/LoginForm";
 export { registerUser } from "./api/register";
 export { loginUser } from "./api/login";
 export { getCurrentUser } from "./api/me";
+export { getMe } from "./api/getMe";
 export * from "./types";
