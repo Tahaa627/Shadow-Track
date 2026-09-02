@@ -1,6 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
+import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import DashboardShell from "@/features/dashboard/components/DashboardShell";
 
 export default function DashboardPage() {
@@ -8,7 +9,8 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <DashboardShell>
         <section className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1440px] bg-[#0a0d14] p-4 sm:p-8">
-          <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center border border-dashed border-[#212938] bg-[#0d1117] p-8 text-center">
+          <DashboardHeader />
+          <div className="mt-8 flex min-h-[calc(100vh-13rem)] items-center justify-center border border-dashed border-[#212938] bg-[#0d1117] p-8 text-center">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f2ca50]">
                 Executive Overview
