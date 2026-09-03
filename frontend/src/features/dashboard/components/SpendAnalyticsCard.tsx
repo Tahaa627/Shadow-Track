@@ -53,6 +53,24 @@ export default function SpendAnalyticsCard() {
       <div className="h-[320px] px-5 py-5" aria-label="Spend chart area">
         <SpendChart />
       </div>
+
+      <div className="flex items-center justify-between px-5 pb-4">
+        <div className="flex items-center gap-4 text-[10px] text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
+            Normal spend
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />
+            Anomaly
+          </div>
+        </div>
+
+        <span className="text-[10px] text-[var(--color-text-muted)]">
+          Last 9 months
+        </span>
+      </div>
     </section>
   );
 }

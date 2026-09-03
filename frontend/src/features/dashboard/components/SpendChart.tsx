@@ -4,7 +4,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -29,61 +31,106 @@ const data: SpendData[] = [
 
 export default function SpendChart() {
   return (
-    <div className="h-full w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          margin={{
-            top: 10,
-            right: 10,
-            left: 5,
-            bottom: 5,
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={data}
+        margin={{
+          top: 10,
+          right: 10,
+          left: 0,
+          bottom: 0,
+        }}
+        barCategoryGap="28%"
+      >
+        <CartesianGrid
+          vertical={false}
+          strokeDasharray="3 3"
+          stroke="var(--color-border)"
+        />
+
+        <XAxis
+          dataKey="month"
+          axisLine={false}
+          tickLine={false}
+          tick={{
+            fill: "var(--color-text-muted)",
+            fontSize: 10,
           }}
-        >
-          <CartesianGrid
-            vertical={false}
-            stroke="var(--color-border)"
-            strokeDasharray="3 3"
-            opacity={0.35}
-          />
+          dy={8}
+        />
 
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-            tick={{
-              fill: "var(--color-text-muted)",
-              fontSize: 10,
-            }}
-          />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          width={55}
+          tick={{
+            fill: "var(--color-text-muted)",
+            fontSize: 10,
+          }}
+          tickFormatter={(value) => `$${value / 1000}k`}
+        />
 
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            width={50}
-            tick={{
-              fill: "var(--color-text-muted)",
-              fontSize: 9,
-            }}
-            tickFormatter={formatCurrency}
-          />
+        <Tooltip
+          cursor={{
+            fill: "var(--color-background)",
+          }}
+          content={<CustomTooltip />}
+        />
 
-          <Bar
-            dataKey="spend"
-            fill="var(--color-primary)"
-            radius={[3, 3, 0, 0]}
-            maxBarSize={38}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+        <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
+          {data.map((entry) => (
+            <Cell
+              key={entry.month}
+              fill={
+                entry.anomaly
+                  ? "var(--color-warning)"
+                  : "var(--color-primary)"
+              }
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
 function formatCurrency(value: number) {
-  if (value >= 1_000_000) {
-    return `$${value / 1_000_000}M`;
-  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-  return `$${value / 1_000}K`;
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value: number; payload: SpendData }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0].payload;
+
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-lg">
+      <p className="text-[10px] font-medium text-[var(--color-text-muted)]">
+        {label}
+      </p>
+
+      <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+        {formatCurrency(payload[0].value)}
+      </p>
+
+      {item.anomaly && (
+        <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-amber-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          Anomaly detected
+        </div>
+      )}
+    </div>
+  );
 }
