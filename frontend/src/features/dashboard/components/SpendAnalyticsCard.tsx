@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SpendChart from "./SpendChart";
 
 export default function SpendAnalyticsCard() {
   const [period, setPeriod] = useState<"M" | "YTD">("YTD");
@@ -49,7 +50,9 @@ export default function SpendAnalyticsCard() {
         </div>
       </div>
 
-      <div className="h-[320px] px-5 py-5" aria-label="Spend chart area" />
+      <div className="h-[320px] px-5 py-5" aria-label="Spend chart area">
+        <SpendChart />
+      </div>
     </section>
   );
 }
