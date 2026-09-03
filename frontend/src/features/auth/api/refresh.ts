@@ -4,6 +4,7 @@ import type { AuthTokens } from "../types";
 
 interface RefreshResponse {
   access: string;
+  refresh?: string;
 }
 
 export const refreshToken = async (): Promise<AuthTokens> => {
@@ -36,10 +37,12 @@ export const refreshToken = async (): Promise<AuthTokens> => {
     throw new Error("Session expired.");
   }
 
-  authStorage.setTokens(data.access, refreshTokenValue);
+  const nextRefreshToken = data.refresh ?? refreshTokenValue;
+
+  authStorage.setTokens(data.access, nextRefreshToken);
 
   return {
     access: data.access,
-    refresh: refreshTokenValue,
+    refresh: nextRefreshToken,
   };
 };

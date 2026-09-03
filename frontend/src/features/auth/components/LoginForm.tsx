@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import Button from "@/components/Button";
+import { useAuth } from "@/hooks/useAuth";
 import { loginUser } from "../api/login";
 import { ApiError } from "@/services/api";
 
@@ -23,6 +24,7 @@ interface LoginFormData {
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshUser } = useAuth();
 
   const registered =
     searchParams?.get("registered") === "true";
@@ -58,6 +60,7 @@ export default function LoginForm() {
 
     try {
       await loginUser(data);
+      await refreshUser();
 
       /*
        * loginUser is responsible for the
