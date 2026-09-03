@@ -9,6 +9,7 @@
   --color-tertiary: #38bdf8;
 
   --color-neutral: #0a0d14;
+  --color-background: var(--color-neutral);
 
   /* Surfaces */
   --color-surface: #11141d;

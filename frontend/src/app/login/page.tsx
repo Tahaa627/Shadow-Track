@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import {
   AuthLayout,
   LoginForm,
@@ -9,7 +11,9 @@ export default function LoginPage() {
       title="Welcome back"
       description="Sign in to access your ShadowAudit workspace."
     >
-      <LoginForm />
+      <Suspense>
+        <LoginForm />
+      </Suspense>
     </AuthLayout>
   );
 }
