@@ -1,10 +1,28 @@
 from rest_framework import status
+from rest_framework import generics
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .models import Expense
+from .serializers import ExpenseSerializer
 from .services import process_expense_csv
+
+
+class ExpenseListView(generics.ListAPIView):
+	permission_classes = [IsAuthenticated]
+	serializer_class = ExpenseSerializer
+
+	def get_queryset(self):
+		organization = getattr(self.request.user, "organization", None)
+
+		if organization is None:
+			return Expense.objects.none()
+
+		return Expense.objects.filter(
+			organization=organization
+		).select_related("organization")
 
 
 class ExpenseCSVUploadView(APIView):

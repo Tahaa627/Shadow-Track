@@ -7,7 +7,7 @@ from apps.accounts.models import User
 from apps.organizations.models import Organization
 
 from .models import Expense
-from .services import process_expense_csv
+from .services import normalize_vendor, process_expense_csv
 
 
 CSV_CONTENT = (
@@ -69,3 +69,35 @@ class ExpenseCSVTests(TestCase):
 		self.assertEqual(response.status_code, 201)
 		self.assertEqual(response.data["processed"], 3)
 		self.assertEqual(response.data["total_spend"], Decimal("44500"))
+
+	def test_normalize_vendor_uses_canonical_aliases(self):
+		self.assertEqual(normalize_vendor(" Slack Inc. "), "Slack")
+		self.assertEqual(normalize_vendor("SLACK"), "Slack")
+		self.assertEqual(normalize_vendor("Slack Technologies"), "Slack")
+
+	def test_expense_list_returns_only_user_organization_expenses(self):
+		other_organization = Organization.objects.create(
+			name="Other",
+			slug="other",
+		)
+		Expense.objects.create(
+			organization=self.organization,
+			vendor="Slack",
+			amount=Decimal("100.00"),
+			transaction_date="2026-01-15",
+		)
+		Expense.objects.create(
+			organization=other_organization,
+			vendor="Notion",
+			amount=Decimal("200.00"),
+			transaction_date="2026-01-15",
+		)
+
+		client = APIClient()
+		client.force_authenticate(user=self.user)
+
+		response = client.get("/api/expenses/")
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.data), 1)
+		self.assertEqual(response.data[0]["vendor"], "Slack")

@@ -1,11 +1,26 @@
 import csv
 import io
+import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 
 from .models import Expense
+
+
+VENDOR_ALIASES = {
+    "slack technologies": "Slack",
+    "slack inc": "Slack",
+    "slack": "Slack",
+    "notion labs": "Notion",
+    "notion": "Notion",
+    "figma inc": "Figma",
+    "figma": "Figma",
+    "microsoft corporation": "Microsoft",
+    "microsoft": "Microsoft",
+    "microsoft 365": "Microsoft 365",
+}
 
 
 REQUIRED_COLUMNS = {"vendor", "amount", "transaction_date"}
@@ -34,7 +49,15 @@ def normalize_header(value):
 
 
 def normalize_vendor(value):
-    return " ".join(value.strip().split())
+    vendor = " ".join(value.strip().split())
+
+    vendor = re.sub(r"[.,]+$", "", vendor)
+    normalized = vendor.lower()
+
+    if normalized in VENDOR_ALIASES:
+        return VENDOR_ALIASES[normalized]
+
+    return vendor
 
 
 def parse_amount(value):
