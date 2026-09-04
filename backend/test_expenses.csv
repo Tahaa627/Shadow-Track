@@ -1,0 +1,5 @@
+vendor,amount,currency,transaction_date,description,employee,department
+Slack,24000,USD,2026-01-15,Annual subscription,john@example.com,Engineering
+Notion,12000,USD,2026-02-01,Team subscription,jane@example.com,Product
+Figma,8500,USD,2026-02-12,Design subscription,,Design
+Microsoft 365,18000,USD,2026-03-01,Software subscription,,Engineering
