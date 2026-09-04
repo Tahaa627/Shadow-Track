@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'apps.dashboard',
     'apps.organizations',
-    'apps.accounts',   
+    'apps.accounts',
+    'apps.expenses',
 ]
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
