@@ -12,6 +12,8 @@ from .models import UsageEvent
 from .services import identify_application
 
 
+from .services import get_saas_usage
+
 class UsageEventView(APIView):
     authentication_classes = [ExtensionTokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -61,3 +63,53 @@ class UsageEventView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+class SaaSUsageView(APIView):
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def get(self, request):
+        organization = getattr(
+            request.user,
+            "organization",
+            None,
+        )
+
+        if organization is None:
+            return Response([])
+
+        usage = get_saas_usage(
+            organization
+        )
+
+        results = []
+
+        for item in usage:
+            total_seconds = (
+                item["total_seconds"] or 0
+            )
+
+            results.append({
+                "application":
+                    item["application"],
+
+                "users":
+                    item["users"],
+
+                "sessions":
+                    item["sessions"],
+
+                "total_seconds":
+                    total_seconds,
+
+                "total_hours":
+                    round(
+                        total_seconds / 3600,
+                        2,
+                    ),
+
+                "last_seen":
+                    item["last_seen"],
+            })
+
+        return Response(results)

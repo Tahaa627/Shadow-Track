@@ -1,3 +1,9 @@
+from django.db.models import (
+    Count,
+    Sum,
+    Max,
+    Q,
+)
 SAAS_DOMAINS = {
     "slack.com": "Slack",
     "notion.so": "Notion",
@@ -32,3 +38,35 @@ def identify_application(domain: str) -> str:
             return application
 
     return ""
+def get_saas_usage(organization):
+    from .models import UsageEvent
+
+    events = (
+        UsageEvent.objects
+        .filter(
+            organization=organization,
+            application__isnull=False,
+        )
+        .exclude(application="")
+    )
+
+    return (
+        events
+        .values(
+            "application",
+        )
+        .annotate(
+            users=Count(
+                "user",
+                distinct=True,
+            ),
+            sessions=Count("id"),
+            total_seconds=Sum(
+                "duration_seconds"
+            ),
+            last_seen=Max(
+                "occurred_at"
+            ),
+        )
+        .order_by("-total_seconds")
+    )
