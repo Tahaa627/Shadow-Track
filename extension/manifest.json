@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "ShadowAudit",
+  "version": "0.1.0",
+  "description": "ShadowAudit SaaS usage discovery extension.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

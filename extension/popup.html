@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>ShadowAudit</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="brand">
+      <div class="logo">S</div>
+
+      <div>
+        <h1>ShadowAudit</h1>
+        <p>SaaS security</p>
+      </div>
+    </div>
+
+    <div id="enrollment">
+      <h2>Connect your organization</h2>
+
+      <p>
+        Enter the enrollment code provided by
+        your ShadowAudit administrator.
+      </p>
+
+      <input
+        id="code"
+        type="text"
+        placeholder="Enrollment code"
+      />
+
+      <button id="enroll">
+        Connect extension
+      </button>
+
+      <div id="error"></div>
+    </div>
+
+    <div id="active" class="hidden">
+      <div class="status">
+        <span></span>
+        Connected
+      </div>
+
+      <p>
+        ShadowAudit is connected and ready
+        to collect SaaS usage signals.
+      </p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
