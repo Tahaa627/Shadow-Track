@@ -9,10 +9,15 @@ const errorElement = document.getElementById("error");
 async function checkEnrollment() {
   const result = await chrome.storage.local.get([
     "enrollment_id",
-    "organization_id"
+    "organization_id",
+    "extension_token"
   ]);
 
-  if (result.enrollment_id && result.organization_id) {
+  if (
+    result.enrollment_id &&
+    result.organization_id &&
+    result.extension_token
+  ) {
     enrollmentView.classList.add("hidden");
     activeView.classList.remove("hidden");
   }
@@ -47,7 +52,8 @@ async function enroll() {
 
     await chrome.storage.local.set({
       enrollment_id: data.enrollment_id,
-      organization_id: data.organization_id
+      organization_id: data.organization_id,
+      extension_token: data.extension_token
     });
 
     enrollmentView.classList.add("hidden");
