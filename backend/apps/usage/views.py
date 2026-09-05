@@ -4,29 +4,26 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.extensions.models import ExtensionEnrollment
+from apps.extensions.authentication import (
+    ExtensionTokenAuthentication,
+)
 
 from .models import UsageEvent
 from .services import identify_application
 
 
 class UsageEventView(APIView):
+    authentication_classes = [ExtensionTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        enrollment_id = request.data.get("enrollment_id")
+        enrollment = request.auth
         domain = request.data.get("domain")
         occurred_at = request.data.get("occurred_at")
         duration_seconds = request.data.get(
             "duration_seconds",
             0,
         )
-
-        if not enrollment_id:
-            return Response(
-                {"detail": "enrollment_id is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if not domain:
             return Response(
@@ -35,32 +32,21 @@ class UsageEventView(APIView):
             )
 
         try:
-            enrollment = (
-                ExtensionEnrollment.objects
-                .select_related("organization")
-                .get(
-                    id=enrollment_id,
-                    status=ExtensionEnrollment.Status.ACTIVE,
-                    user=request.user,
-                )
-            )
-        except ExtensionEnrollment.DoesNotExist:
-            return Response(
-                {"detail": "Invalid extension enrollment."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            duration_seconds = int(duration_seconds)
+        except (TypeError, ValueError):
+            duration_seconds = 0
 
         application = identify_application(domain)
 
         event = UsageEvent.objects.create(
             organization=enrollment.organization,
             enrollment=enrollment,
-            user=request.user,
+            user=enrollment.user,
             domain=domain,
             application=application,
             event_type="active_tab",
             occurred_at=occurred_at or timezone.now(),
-            duration_seconds=duration_seconds,
+            duration_seconds=max(duration_seconds, 0),
         )
 
         enrollment.last_seen = timezone.now()

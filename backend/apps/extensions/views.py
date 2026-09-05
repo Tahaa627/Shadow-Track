@@ -74,11 +74,16 @@ class ExtensionEnrollView(APIView):
             )
 
         now = timezone.now()
+        extension_token = ExtensionEnrollment.generate_token()
+        enrollment.extension_token_hash = (
+            ExtensionEnrollment.hash_token(extension_token)
+        )
         enrollment.status = ExtensionEnrollment.Status.ACTIVE
         enrollment.enrolled_at = now
         enrollment.last_seen = now
         enrollment.save(
             update_fields=[
+                "extension_token_hash",
                 "status",
                 "enrolled_at",
                 "last_seen",
@@ -90,6 +95,7 @@ class ExtensionEnrollView(APIView):
                 "status": "active",
                 "enrollment_id": enrollment.id,
                 "organization_id": str(enrollment.organization_id),
+                "extension_token": extension_token,
             },
             status=status.HTTP_200_OK,
         )

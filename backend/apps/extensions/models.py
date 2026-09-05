@@ -1,6 +1,4 @@
-from django.db import models
-
-# Create your models here.
+import hashlib
 import secrets
 
 from django.conf import settings
@@ -31,6 +29,14 @@ class ExtensionEnrollment(models.Model):
         db_index=True,
     )
 
+    extension_token_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -58,3 +64,11 @@ class ExtensionEnrollment(models.Model):
     @staticmethod
     def generate_code():
         return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def generate_token():
+        return "sa_ext_" + secrets.token_urlsafe(48)
+
+    @staticmethod
+    def hash_token(token):
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
