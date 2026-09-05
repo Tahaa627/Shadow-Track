@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Boxes,
   FileCheck2,
   LayoutDashboard,
   Menu,
@@ -23,6 +24,7 @@ interface DashboardSidebarProps {
 const navigation = [
   { label: "Executive Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Expense Audit", href: "/dashboard/expenses", icon: FileCheck2 },
+  { label: "SaaS Inventory", href: "/dashboard/saas", icon: Boxes },
   { label: "Optimization Insights", href: "/dashboard/optimization", icon: ScanSearch },
   { label: "Security & Compliance", href: "/dashboard/security", icon: Shield },
 ];

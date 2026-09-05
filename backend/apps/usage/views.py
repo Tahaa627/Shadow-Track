@@ -9,10 +9,11 @@ from apps.extensions.authentication import (
 )
 
 from .models import UsageEvent
-from .services import identify_application
-
-
-from .services import get_saas_usage
+from .services import (
+    get_saas_inventory,
+    get_saas_usage,
+    identify_application,
+)
 
 class UsageEventView(APIView):
     authentication_classes = [ExtensionTokenAuthentication]
@@ -113,3 +114,15 @@ class SaaSUsageView(APIView):
             })
 
         return Response(results)
+
+
+class SaaSInventoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        organization = getattr(request.user, "organization", None)
+
+        if organization is None:
+            return Response([])
+
+        return Response(get_saas_inventory(organization))
