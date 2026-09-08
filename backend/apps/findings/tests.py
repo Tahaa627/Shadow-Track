@@ -8,7 +8,10 @@ from apps.accounts.models import User
 from apps.organizations.models import Organization
 
 from .models import Finding
-from .services import refresh_findings
+from .services import (
+	generate_redundancy_findings,
+	refresh_findings,
+)
 
 
 class FindingsTests(TestCase):
@@ -86,5 +89,38 @@ class FindingsTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data, [])
 		self.assertFalse(Finding.objects.exists())
+
+	def test_redundancy_detection_flags_lower_spend_overlap(self):
+		inventory = [
+			{
+				"application": "Miro",
+				"spend": Decimal("42000.00"),
+				"users": 10,
+				"sessions": 20,
+			},
+			{
+				"application": "Lucidchart",
+				"spend": Decimal("12000.00"),
+				"users": 4,
+				"sessions": 8,
+			},
+			{
+				"application": "Slack",
+				"spend": Decimal("9000.00"),
+				"users": 10,
+				"sessions": 50,
+			},
+		]
+
+		findings = generate_redundancy_findings(inventory)
+
+		self.assertEqual(len(findings), 1)
+		self.assertEqual(findings[0]["application"], "Lucidchart")
+		self.assertEqual(findings[0]["finding_type"], Finding.FindingType.REDUNDANT)
+		self.assertEqual(findings[0]["potential_savings"], Decimal("12000.00"))
+		self.assertEqual(
+			findings[0]["evidence"]["recommended_primary"],
+			"Miro",
+		)
 
 # Create your tests here.
