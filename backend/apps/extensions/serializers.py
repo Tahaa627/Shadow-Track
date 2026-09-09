@@ -15,5 +15,6 @@ class ExtensionEnrollmentSerializer(
             "enrolled_at",
             "last_seen",
             "created_at",
+            "expires_at",
         ]
         read_only_fields = fields

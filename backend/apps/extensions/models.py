@@ -1,8 +1,14 @@
 import hashlib
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+
+
+def default_enrollment_expiration():
+    return timezone.now() + timedelta(minutes=15)
 
 
 class ExtensionEnrollment(models.Model):
@@ -54,6 +60,10 @@ class ExtensionEnrollment(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    expires_at = models.DateTimeField(
+        default=default_enrollment_expiration,
+    )
 
     class Meta:
         ordering = ["-created_at"]

@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.organizations.models import Organization
@@ -43,6 +46,39 @@ class ExtensionAuthenticationTests(TestCase):
 			ExtensionEnrollment.hash_token(token),
 		)
 		self.assertNotEqual(self.enrollment.extension_token_hash, token)
+
+	def test_authenticated_user_can_create_and_list_organization_enrollments(self):
+		self.client.force_authenticate(self.user)
+
+		create_response = self.client.post(
+			reverse("extension-enrollment-create"),
+			{},
+			format="json",
+		)
+
+		self.assertEqual(create_response.status_code, 201)
+		self.assertEqual(create_response.data["status"], "pending")
+		self.assertIsNotNone(create_response.data["expires_at"])
+
+		list_response = self.client.get(
+			reverse("extension-enrollment-create")
+		)
+
+		self.assertEqual(list_response.status_code, 200)
+		self.assertEqual(len(list_response.data), 2)
+
+	def test_expired_enrollment_code_is_rejected(self):
+		self.enrollment.expires_at = timezone.now() - timedelta(minutes=1)
+		self.enrollment.save(update_fields=["expires_at"])
+
+		response = self.client.post(
+			reverse("extension-enroll"),
+			{"enrollment_code": self.enrollment.enrollment_code},
+			format="json",
+		)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertEqual(response.data["detail"], "Enrollment code has expired.")
 
 	def test_usage_event_accepts_extension_token(self):
 		token = ExtensionEnrollment.generate_token()

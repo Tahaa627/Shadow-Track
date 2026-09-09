@@ -1,0 +1,4 @@
+vendor,amount,currency,transaction_date,description,employee,department
+Linear,3000,USD,2026-04-01,Valid shadow candidate,,Engineering
+Slack,not-a-number,USD,2026-04-02,Invalid amount,,Engineering
+Zoom,2000,USD,2026-04-03,Valid second row,,Engineering

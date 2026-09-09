@@ -11,6 +11,23 @@ from .serializers import ExtensionEnrollmentSerializer
 class ExtensionEnrollmentCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        organization = getattr(request.user, "organization", None)
+
+        if organization is None:
+            return Response([])
+
+        enrollments = ExtensionEnrollment.objects.filter(
+            organization=organization,
+        )
+
+        serializer = ExtensionEnrollmentSerializer(
+            enrollments,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
     def post(self, request):
         organization = getattr(
             request.user,
@@ -70,6 +87,12 @@ class ExtensionEnrollView(APIView):
         except ExtensionEnrollment.DoesNotExist:
             return Response(
                 {"detail": "Invalid or expired enrollment code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if enrollment.expires_at <= timezone.now():
+            return Response(
+                {"detail": "Enrollment code has expired."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
