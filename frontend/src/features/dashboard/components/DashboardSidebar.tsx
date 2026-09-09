@@ -6,6 +6,7 @@ import {
   FileCheck2,
   LayoutDashboard,
   Menu,
+  Monitor,
   ScanSearch,
   Settings,
   Shield,
@@ -25,6 +26,7 @@ const navigation = [
   { label: "Executive Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Expense Audit", href: "/dashboard/expenses", icon: FileCheck2 },
   { label: "SaaS Inventory", href: "/dashboard/saas", icon: Boxes },
+  { label: "Chrome Extension", href: "/dashboard/extension", icon: Monitor },
   { label: "Optimization Insights", href: "/dashboard/optimization", icon: ScanSearch },
   { label: "Security & Compliance", href: "/dashboard/security", icon: Shield },
 ];
