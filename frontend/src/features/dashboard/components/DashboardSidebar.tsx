@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   BarChart3,
   Boxes,
   FileCheck2,
@@ -25,6 +26,7 @@ interface DashboardSidebarProps {
 const navigation = [
   { label: "Executive Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Expense Audit", href: "/dashboard/expenses", icon: FileCheck2 },
+  { label: "Findings", href: "/dashboard/findings", icon: AlertTriangle },
   { label: "SaaS Inventory", href: "/dashboard/saas", icon: Boxes },
   { label: "Chrome Extension", href: "/dashboard/extension", icon: Monitor },
   { label: "Optimization Insights", href: "/dashboard/optimization", icon: ScanSearch },

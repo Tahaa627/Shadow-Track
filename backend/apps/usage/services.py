@@ -15,6 +15,7 @@ from .models import UsageEvent
 SAAS_DOMAINS = {
     "slack.com": "Slack",
     "notion.so": "Notion",
+    "notion.com": "Notion",
     "figma.com": "Figma",
     "github.com": "GitHub",
     "linear.app": "Linear",
@@ -29,6 +30,7 @@ SAAS_DOMAINS = {
     "office.com": "Microsoft 365",
     "google.com": "Google",
     "workspace.google.com": "Google Workspace",
+    "chatgpt.com": "ChatGPT",
 }
 
 

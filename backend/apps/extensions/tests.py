@@ -47,6 +47,14 @@ class ExtensionAuthenticationTests(TestCase):
 		)
 		self.assertNotEqual(self.enrollment.extension_token_hash, token)
 
+		self.client.force_authenticate(self.user)
+		dashboard_response = self.client.get(
+			reverse("extension-enrollment-create")
+		)
+
+		self.assertEqual(dashboard_response.status_code, 200)
+		self.assertEqual(dashboard_response.data[0]["status"], "active")
+
 	def test_authenticated_user_can_create_and_list_organization_enrollments(self):
 		self.client.force_authenticate(self.user)
 

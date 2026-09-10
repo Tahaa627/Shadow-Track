@@ -1,10 +1,12 @@
 "use client";
-
+// This file is a client component because it uses state and effects
+//use effect to fetch the enrollment status and update it every 5 seconds if it's pending
 import { useEffect, useState } from "react";
 import { Check, Copy, Monitor, RefreshCw } from "lucide-react";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardShell from "@/features/dashboard/components/DashboardShell";
+import { useAuth } from "@/hooks/useAuth";
 import {
   createExtensionEnrollment,
   getExtensionEnrollments,
@@ -27,6 +29,7 @@ function formatDate(value: string | null) {
 }
 
 export default function ExtensionPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [enrollment, setEnrollment] = useState<ExtensionEnrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -69,12 +72,14 @@ export default function ExtensionPage() {
   }
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
+
     const timeout = window.setTimeout(() => {
       void loadEnrollments();
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     if (!enrollment || enrollment.status !== "pending") return;
