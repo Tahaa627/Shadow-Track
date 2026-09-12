@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import KpiCard from "@/features/dashboard/components/KpiCard";
 import DashboardShell from "@/features/dashboard/components/DashboardShell";
 import SpendAnalyticsCard from "@/features/dashboard/components/SpendAnalyticsCard";
+import { getDashboardAnomalies } from "@/features/dashboard/api/anomalyApi";
 
 const kpis = [
   { label: "Total SaaS Spend (YTD)", value: "$4.2M", detail: "+12% vs prior quarter", detailClass: "text-[#f0646c]", accent: "border-l-[#d4af37]", icon: "▤" },
@@ -20,6 +23,28 @@ const redundancies = [
 ];
 
 export default function DashboardPage() {
+  const [anomalyCount, setAnomalyCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    getDashboardAnomalies()
+      .then((data) => {
+        if (isCurrent) {
+          setAnomalyCount(data.count);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setAnomalyCount(0);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   return (
     <ProtectedRoute>
       <DashboardShell>
@@ -36,7 +61,9 @@ export default function DashboardPage() {
               <div className="border-b border-[#212938] px-3 py-3"><h2 id="redundancy-title" className="text-sm font-bold text-[#f3f4f6]">High-Risk Redundancies</h2><p className="mt-1 text-[8px] text-[#9ba1ad]">Identified overlapping functionality</p></div>
               <div className="grid grid-cols-[1fr_44px] border-b border-[#212938] px-3 py-2 text-[8px] font-semibold text-[#9ba1ad]"><span>Application</span><span>Est. Waste</span></div>
               {redundancies.map((item) => <div key={item.rank} className="grid grid-cols-[1fr_44px] items-center gap-2 border-b border-[#212938] px-3 py-2"><div className="flex items-center gap-2"><span className="border border-[#273142] px-1 py-1 text-[7px] text-[#9ba1ad]">{item.rank}</span><div><p className="text-[10px] font-bold text-[#f3f4f6]">{item.app}</p><p className="text-[7px] leading-tight text-[#9ba1ad]">{item.detail}</p></div></div><span className="text-[9px] font-bold text-[#f0646c]">{item.waste}</span></div>)}
-              <button type="button" className="w-full px-3 py-3 text-[8px] font-bold text-[#f2ca50] hover:bg-[#191c26]">View All Anomalies →</button>
+              <button type="button" className="w-full px-3 py-3 text-[8px] font-bold text-[#f2ca50] hover:bg-[#191c26]">
+                View All Anomalies ({anomalyCount ?? "..."}) →
+              </button>
             </section>
           </div>
         </section>
