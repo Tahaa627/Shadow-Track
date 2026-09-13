@@ -1,17 +1,12 @@
-from django.db.models import (
-    Count,
-    Sum,
-    Max,
-    Q,
-)
-
 from decimal import Decimal
+
+from django.db.models import Count, Max, Sum
 
 from apps.expenses.models import Expense
 
 from .models import UsageEvent
 
-
+# Some common SaaS application domains and their canonical names.
 SAAS_DOMAINS = {
     "slack.com": "Slack",
     "notion.so": "Notion",
@@ -26,15 +21,109 @@ SAAS_DOMAINS = {
     "canva.com": "Canva",
     "salesforce.com": "Salesforce",
     "hubspot.com": "HubSpot",
-    "microsoft.com": "Microsoft",
+    "microsoft.com": "Microsoft 365",
     "office.com": "Microsoft 365",
-    "google.com": "Google",
+    "google.com": "Google Workspace",
     "workspace.google.com": "Google Workspace",
     "chatgpt.com": "ChatGPT",
 }
 
+# Some common vendor name aliases and their canonical names.
+VENDOR_ALIASES = {
+    "slack": "Slack",
+    "slack technologies": "Slack",
+    "slack inc": "Slack",
+
+    "notion": "Notion",
+    "notion labs": "Notion",
+
+    "figma": "Figma",
+    "figma inc": "Figma",
+
+    "github": "GitHub",
+    "github inc": "GitHub",
+
+    "linear": "Linear",
+    "linear inc": "Linear",
+
+    "dropbox": "Dropbox",
+    "dropbox inc": "Dropbox",
+
+    "zoom": "Zoom",
+    "zoom video communications": "Zoom",
+
+    "canva": "Canva",
+
+    "salesforce": "Salesforce",
+    "salesforce.com": "Salesforce",
+
+    "hubspot": "HubSpot",
+    "hubspot inc": "HubSpot",
+
+    "microsoft": "Microsoft 365",
+    "microsoft corporation": "Microsoft 365",
+    "microsoft 365": "Microsoft 365",
+    "office 365": "Microsoft 365",
+
+    "google": "Google Workspace",
+    "google workspace": "Google Workspace",
+
+    "openai": "ChatGPT",
+    "chatgpt": "ChatGPT",
+}
+
+'''
+    Meant by normalize_vendor is to take a vendor name or domain and return a canonical SaaS application
+    name. It handles common vendor names, aliases, and domain recognition to ensure consistent naming 
+    across the system.
+'''
+def normalize_vendor(value: str) -> str:
+    """
+    Convert common vendor names and aliases into a canonical
+    SaaS application name.
+    """
+
+    if not value:
+        return ""
+
+    value = value.strip().lower()
+
+    if value.startswith("www."):
+        value = value[4:]
+
+    # Domain recognition.
+    if value in SAAS_DOMAINS:
+        return SAAS_DOMAINS[value]
+
+    for domain, application in SAAS_DOMAINS.items():
+        if value.endswith("." + domain):
+            return application
+
+    # Remove common punctuation.
+    normalized = (
+        value
+        .replace(",", "")
+        .replace(".", "")
+        .replace("-", " ")
+        .replace("_", " ")
+    )
+
+    normalized = " ".join(normalized.split())
+
+    if normalized in VENDOR_ALIASES:
+        return VENDOR_ALIASES[normalized]
+
+    return value.title()
+
 
 def identify_application(domain: str) -> str:
+    """
+    Identify an application from a browser domain.
+    """
+
+    if not domain:
+        return ""
+
     domain = domain.lower().strip()
 
     if domain.startswith("www."):
@@ -48,6 +137,8 @@ def identify_application(domain: str) -> str:
             return application
 
     return ""
+
+
 def get_saas_usage(organization):
     events = (
         UsageEvent.objects
@@ -60,21 +151,12 @@ def get_saas_usage(organization):
 
     return (
         events
-        .values(
-            "application",
-        )
+        .values("application")
         .annotate(
-            users=Count(
-                "user",
-                distinct=True,
-            ),
+            users=Count("user", distinct=True),
             sessions=Count("id"),
-            total_seconds=Sum(
-                "duration_seconds"
-            ),
-            last_seen=Max(
-                "occurred_at"
-            ),
+            total_seconds=Sum("duration_seconds"),
+            last_seen=Max("occurred_at"),
         )
         .order_by("-total_seconds")
     )
@@ -109,25 +191,18 @@ def get_saas_inventory(organization):
 
     inventory = {}
 
+    # ---------------------------------------------------------
+    # Expenses
+    # ---------------------------------------------------------
+
     for row in expense_rows:
-        vendor = row["vendor"].strip()
-        if not vendor:
+        vendor = row["vendor"]
+
+        application = normalize_vendor(vendor)
+
+        if not application:
             continue
 
-        application = identify_application(vendor) or vendor
-        key = application.lower()
-        inventory[key] = {
-            "application": application,
-            "spend": row["total_spend"] or Decimal("0"),
-            "transactions": row["transactions"],
-            "users": 0,
-            "sessions": 0,
-            "total_seconds": 0,
-            "last_seen": None,
-        }
-
-    for row in usage_rows:
-        application = row["application"]
         key = application.lower()
 
         if key not in inventory:
@@ -141,19 +216,65 @@ def get_saas_inventory(organization):
                 "last_seen": None,
             }
 
-        inventory[key].update(
-            users=row["users"],
-            sessions=row["sessions"],
-            total_seconds=row["total_seconds"] or 0,
-            last_seen=row["last_seen"],
+        inventory[key]["spend"] += (
+            row["total_spend"] or Decimal("0")
         )
 
+        inventory[key]["transactions"] += (
+            row["transactions"] or 0
+        )
+
+    # ---------------------------------------------------------
+    # Browser usage
+    # ---------------------------------------------------------
+
+    for row in usage_rows:
+        application = normalize_vendor(row["application"])
+
+        if not application:
+            continue
+
+        key = application.lower()
+
+        if key not in inventory:
+            inventory[key] = {
+                "application": application,
+                "spend": Decimal("0"),
+                "transactions": 0,
+                "users": 0,
+                "sessions": 0,
+                "total_seconds": 0,
+                "last_seen": None,
+            }
+
+        inventory[key]["users"] += row["users"] or 0
+        inventory[key]["sessions"] += row["sessions"] or 0
+        inventory[key]["total_seconds"] += (
+            row["total_seconds"] or 0
+        )
+
+        if (
+            inventory[key]["last_seen"] is None
+            or row["last_seen"]
+            > inventory[key]["last_seen"]
+        ):
+            inventory[key]["last_seen"] = row["last_seen"]
+
+    # ---------------------------------------------------------
+    # Classification
+    # ---------------------------------------------------------
+
     results = []
+
     for item in inventory.values():
         spend = item["spend"]
         users = item["users"]
         total_seconds = item["total_seconds"]
-        total_hours = round(total_seconds / 3600, 2)
+
+        total_hours = round(
+            total_seconds / 3600,
+            2,
+        )
 
         if users == 0:
             utilization = "unknown"
@@ -166,10 +287,13 @@ def get_saas_inventory(organization):
 
         if spend > 0 and users == 0:
             status = "unverified"
+
         elif spend > 0 and utilization == "low":
             status = "low_usage"
+
         elif spend == 0 and users > 0:
             status = "shadow"
+
         else:
             status = "active"
 
@@ -188,5 +312,8 @@ def get_saas_inventory(organization):
 
     return sorted(
         results,
-        key=lambda item: (-float(item["spend"]), item["application"].lower()),
+        key=lambda item: (
+            -float(item["spend"]),
+            item["application"].lower(),
+        ),
     )
