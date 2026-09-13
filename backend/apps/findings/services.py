@@ -5,6 +5,7 @@ from django.db import transaction
 from apps.usage.services import get_saas_inventory
 
 from .models import Finding
+from .redundancy_service import detect_redundancies
 
 
 LOW_USAGE_SAVINGS_RATE = Decimal("0.50")
@@ -18,9 +19,37 @@ REDUNDANCY_GROUPS = (
 
 
 def generate_findings(organization):
-    return generate_savings_findings_from_inventory(
+    findings = generate_savings_findings_from_inventory(
         get_saas_inventory(organization),
     )
+
+    redundancies = detect_redundancies(organization)
+
+    for redundancy in redundancies:
+        applications = redundancy["applications"]
+        application_label = " + ".join(applications)
+
+        findings.append({
+            "application": application_label,
+            "finding_type": Finding.FindingType.REDUNDANT,
+            "severity": Finding.Severity.MEDIUM,
+            "annual_spend": redundancy["total_spend"],
+            "potential_savings": redundancy["potential_savings"],
+            "evidence": {
+                "category": redundancy["category"],
+                "applications": applications,
+                "total_users": redundancy["total_users"],
+                "total_hours": redundancy["total_hours"],
+                "tools": redundancy["evidence"],
+            },
+            "recommendation": (
+                f"Review the overlapping {redundancy['category'].replace('_', ' ')} "
+                f"tools ({application_label}) and determine whether one can be "
+                "consolidated or retired."
+            ),
+        })
+
+    return findings
 
 
 def generate_savings_findings(organization):
@@ -141,9 +170,7 @@ def generate_redundancy_findings(inventory):
 @transaction.atomic
 def refresh_findings(organization):
     Finding.objects.filter(organization=organization).delete()
-    inventory = list(get_saas_inventory(organization))
-    generated = generate_savings_findings_from_inventory(inventory)
-    generated.extend(generate_redundancy_findings(inventory))
+    generated = generate_findings(organization)
     findings = [Finding(organization=organization, **item) for item in generated]
     Finding.objects.bulk_create(findings)
     return findings
