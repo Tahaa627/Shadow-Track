@@ -99,10 +99,10 @@ def detect_redundancies(organization):
             "evidence": [
                 {
                     "application": item["application"],
-                    "spend": item["spend"],
+                    "spend": str(item["spend"]),
                     "users": item["users"],
                     "sessions": item["sessions"],
-                    "usage_hours": item["total_hours"],
+                    "usage_hours": str(item["total_hours"]),
                     "status": item["status"],
                 }
                 for item in detected

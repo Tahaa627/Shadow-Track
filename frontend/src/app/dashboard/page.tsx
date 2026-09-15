@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
+import {
+  getDashboardAnomalies,
+  type DashboardAnomaly,
+} from "@/features/dashboard/api/anomalyApi";
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import KpiCard from "@/features/dashboard/components/KpiCard";
 import DashboardShell from "@/features/dashboard/components/DashboardShell";
 import SpendAnalyticsCard from "@/features/dashboard/components/SpendAnalyticsCard";
-import { getDashboardAnomalies } from "@/features/dashboard/api/anomalyApi";
 
 const kpis = [
   { label: "Total SaaS Spend (YTD)", value: "$4.2M", detail: "+12% vs prior quarter", detailClass: "text-[#f0646c]", accent: "border-l-[#d4af37]", icon: "▤" },
@@ -24,6 +27,8 @@ const redundancies = [
 
 export default function DashboardPage() {
   const [anomalyCount, setAnomalyCount] = useState<number | null>(null);
+  const [anomalies, setAnomalies] = useState<DashboardAnomaly[]>([]);
+  const [anomaliesLoading, setAnomaliesLoading] = useState(true);
 
   useEffect(() => {
     let isCurrent = true;
@@ -32,11 +37,18 @@ export default function DashboardPage() {
       .then((data) => {
         if (isCurrent) {
           setAnomalyCount(data.count);
+          setAnomalies(data.results);
         }
       })
       .catch(() => {
         if (isCurrent) {
           setAnomalyCount(0);
+          setAnomalies([]);
+        }
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setAnomaliesLoading(false);
         }
       });
 
@@ -61,6 +73,37 @@ export default function DashboardPage() {
               <div className="border-b border-[#212938] px-3 py-3"><h2 id="redundancy-title" className="text-sm font-bold text-[#f3f4f6]">High-Risk Redundancies</h2><p className="mt-1 text-[8px] text-[#9ba1ad]">Identified overlapping functionality</p></div>
               <div className="grid grid-cols-[1fr_44px] border-b border-[#212938] px-3 py-2 text-[8px] font-semibold text-[#9ba1ad]"><span>Application</span><span>Est. Waste</span></div>
               {redundancies.map((item) => <div key={item.rank} className="grid grid-cols-[1fr_44px] items-center gap-2 border-b border-[#212938] px-3 py-2"><div className="flex items-center gap-2"><span className="border border-[#273142] px-1 py-1 text-[7px] text-[#9ba1ad]">{item.rank}</span><div><p className="text-[10px] font-bold text-[#f3f4f6]">{item.app}</p><p className="text-[7px] leading-tight text-[#9ba1ad]">{item.detail}</p></div></div><span className="text-[9px] font-bold text-[#f0646c]">{item.waste}</span></div>)}
+              <div className="border-b border-[#212938] px-3 py-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#9ba1ad]">Live anomalies</span>
+                  <span className="text-[8px] font-bold text-[#f2ca50]">{anomalyCount ?? "..."}</span>
+                </div>
+
+                {anomaliesLoading ? (
+                  <div className="text-[8px] text-[#9ba1ad]">Loading anomalies...</div>
+                ) : anomalies.length === 0 ? (
+                  <div className="rounded-lg border border-[#212938] p-3 text-[8px] text-[#9ba1ad]">
+                    No anomalies detected.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {anomalies.slice(0, 3).map((anomaly, index) => (
+                      <div key={`${anomaly.type}-${anomaly.vendor}-${anomaly.date}-${index}`} className="rounded-lg border border-[#212938] bg-[#0d1118] p-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] font-bold text-[#f3f4f6]">{anomaly.vendor}</p>
+                            <p className="mt-1 text-[7px] leading-relaxed text-[#9ba1ad]">{anomaly.description}</p>
+                          </div>
+                          <span className="text-[7px] font-bold uppercase text-[#f2ca50]">{anomaly.severity}</span>
+                        </div>
+                        <div className="mt-2 text-[7px] text-[#9ba1ad]">
+                          Amount: <span className="font-bold text-[#f3f4f6]">${Number(anomaly.amount).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button type="button" className="w-full px-3 py-3 text-[8px] font-bold text-[#f2ca50] hover:bg-[#191c26]">
                 View All Anomalies ({anomalyCount ?? "..."}) →
               </button>

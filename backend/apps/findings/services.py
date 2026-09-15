@@ -39,7 +39,7 @@ def generate_findings(organization):
                 "category": redundancy["category"],
                 "applications": applications,
                 "total_users": redundancy["total_users"],
-                "total_hours": redundancy["total_hours"],
+                    "total_hours": str(redundancy["total_hours"]),
                 "tools": redundancy["evidence"],
             },
             "recommendation": (
