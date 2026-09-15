@@ -216,17 +216,3 @@ This project is in an early development stage. The foundation is in place, and k
 - Use environment variables for secrets and local configuration
 - Validate frontend and backend changes together before shipping larger features
 
-## License
-
-This project does not currently include a license file. If you plan to share or distribute it publicly, add an appropriate license before doing so.
-
-## Support
-
-If you are working on this project locally, the best next steps are:
-
-1. verify the backend is running on port 8000
-2. verify the frontend is running on port 3000
-3. confirm environment variables are set properly
-4. test the registration and login flows end-to-end
-
-If you want, the next useful addition would be a `.env.example` file and a Docker-based setup for one-command local development.
