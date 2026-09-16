@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { DashboardSpendPoint } from "@/features/dashboard/api/dashboardApi";
 import SpendChart from "./SpendChart";
 
-export default function SpendAnalyticsCard() {
+export default function SpendAnalyticsCard({
+  spendData,
+}: {
+  spendData: DashboardSpendPoint[];
+}) {
   const [period, setPeriod] = useState<"M" | "YTD">("YTD");
 
   return (
@@ -51,7 +56,7 @@ export default function SpendAnalyticsCard() {
       </div>
 
       <div className="h-[320px] px-5 py-5" aria-label="Spend chart area">
-        <SpendChart />
+        <SpendChart data={spendData} />
       </div>
 
       <div className="flex items-center justify-between px-5 pb-4">

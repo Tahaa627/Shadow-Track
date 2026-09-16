@@ -1,12 +1,32 @@
 from decimal import Decimal
 
 from django.db.models import Sum
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
 from apps.expenses.models import Expense
 from apps.findings.models import Finding
 from apps.usage.services import get_saas_inventory
 from .anomaly_service import detect_anomalies
+
+
+def get_monthly_spend(organization):
+    rows = (
+        Expense.objects
+        .filter(organization=organization)
+        .annotate(month=TruncMonth("transaction_date"))
+        .values("month")
+        .annotate(spend=Sum("amount"))
+        .order_by("month")
+    )
+
+    return [
+        {
+            "month": row["month"].strftime("%Y-%m"),
+            "spend": str(row["spend"] or Decimal("0")),
+        }
+        for row in rows
+    ]
 
 
 def get_dashboard_summary(organization):

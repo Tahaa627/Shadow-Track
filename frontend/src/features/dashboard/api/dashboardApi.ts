@@ -23,3 +23,7 @@ export interface DashboardSpendResponse {
 export async function getDashboardSummary() {
   return apiRequest<DashboardSummary>("/dashboard/summary/");
 }
+
+export async function getDashboardSpend() {
+  return apiRequest<DashboardSpendResponse>("/dashboard/spend/");
+}

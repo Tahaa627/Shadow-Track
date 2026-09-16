@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DashboardAnomaliesView, DashboardSummaryView
+from .views import DashboardAnomaliesView, DashboardSpendView, DashboardSummaryView
 
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
         DashboardAnomaliesView.as_view(),
         name="dashboard-anomalies",
     ),
+    path("spend/", DashboardSpendView.as_view(), name="dashboard-spend"),
 ]

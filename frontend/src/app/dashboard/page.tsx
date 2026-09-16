@@ -8,8 +8,10 @@ import {
   type DashboardAnomaly,
 } from "@/features/dashboard/api/anomalyApi";
 import {
+  getDashboardSpend,
   getDashboardSummary,
   type DashboardSummary,
+  type DashboardSpendPoint,
 } from "@/features/dashboard/api/dashboardApi";
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import KpiCard from "@/features/dashboard/components/KpiCard";
@@ -35,18 +37,21 @@ export default function DashboardPage() {
   const [anomalyCount, setAnomalyCount] = useState<number | null>(null);
   const [anomalies, setAnomalies] = useState<DashboardAnomaly[]>([]);
   const [anomaliesLoading, setAnomaliesLoading] = useState(true);
+  const [spendData, setSpendData] = useState<DashboardSpendPoint[]>([]);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [summaryData, anomalyData] = await Promise.all([
+        const [summaryData, anomalyData, spendResponse] = await Promise.all([
           getDashboardSummary(),
           getDashboardAnomalies(),
+          getDashboardSpend(),
         ]);
 
         setSummary(summaryData);
         setAnomalyCount(anomalyData.count);
         setAnomalies(anomalyData.results);
+        setSpendData(spendResponse.results);
       } catch (error) {
         console.error("Failed to load dashboard:", error);
       } finally {
@@ -80,7 +85,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <div className="mt-8 grid gap-3 xl:grid-cols-[minmax(0,2.1fr)_minmax(290px,1fr)]">
-            <SpendAnalyticsCard />
+            <SpendAnalyticsCard spendData={spendData} />
             <section className="border border-[#212938] bg-[#11141d]" aria-labelledby="redundancy-title">
               <div className="border-b border-[#212938] px-3 py-3"><h2 id="redundancy-title" className="text-sm font-bold text-[#f3f4f6]">High-Risk Redundancies</h2><p className="mt-1 text-[8px] text-[#9ba1ad]">Identified overlapping functionality</p></div>
               <div className="grid grid-cols-[1fr_44px] border-b border-[#212938] px-3 py-2 text-[8px] font-semibold text-[#9ba1ad]"><span>Application</span><span>Est. Waste</span></div>
