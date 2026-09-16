@@ -7,6 +7,10 @@ import {
   getDashboardAnomalies,
   type DashboardAnomaly,
 } from "@/features/dashboard/api/anomalyApi";
+import {
+  getDashboardSummary,
+  type DashboardSummary,
+} from "@/features/dashboard/api/dashboardApi";
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import KpiCard from "@/features/dashboard/components/KpiCard";
 import DashboardShell from "@/features/dashboard/components/DashboardShell";
@@ -26,36 +30,44 @@ const redundancies = [
 ];
 
 export default function DashboardPage() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [anomalyCount, setAnomalyCount] = useState<number | null>(null);
   const [anomalies, setAnomalies] = useState<DashboardAnomaly[]>([]);
   const [anomaliesLoading, setAnomaliesLoading] = useState(true);
 
   useEffect(() => {
-    let isCurrent = true;
+    async function loadDashboard() {
+      try {
+        const [summaryData, anomalyData] = await Promise.all([
+          getDashboardSummary(),
+          getDashboardAnomalies(),
+        ]);
 
-    getDashboardAnomalies()
-      .then((data) => {
-        if (isCurrent) {
-          setAnomalyCount(data.count);
-          setAnomalies(data.results);
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          setAnomalyCount(0);
-          setAnomalies([]);
-        }
-      })
-      .finally(() => {
-        if (isCurrent) {
-          setAnomaliesLoading(false);
-        }
-      });
+        setSummary(summaryData);
+        setAnomalyCount(anomalyData.count);
+        setAnomalies(anomalyData.results);
+      } catch (error) {
+        console.error("Failed to load dashboard:", error);
+      } finally {
+        setSummaryLoading(false);
+        setAnomaliesLoading(false);
+      }
+    }
 
-    return () => {
-      isCurrent = false;
-    };
+    loadDashboard();
   }, []);
+
+  const liveKpiValues = [
+    summaryLoading
+      ? "—"
+      : `$${Number(summary?.total_spend ?? 0).toLocaleString()}`,
+    summaryLoading ? "—" : `${summary?.shadow_saas_count ?? 0}`,
+    summaryLoading
+      ? "—"
+      : `$${Number(summary?.potential_savings ?? 0).toLocaleString()}`,
+    summaryLoading ? "—" : `${summary?.active_tools ?? 0}`,
+  ];
 
   return (
     <ProtectedRoute>
@@ -63,8 +75,8 @@ export default function DashboardPage() {
         <section className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1440px] bg-[#0a0d14] p-4 sm:p-8 lg:p-5">
           <div className="sr-only"><DashboardHeader /></div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {kpis.map((kpi) => (
-              <KpiCard key={kpi.label} {...kpi} />
+            {kpis.map((kpi, index) => (
+              <KpiCard key={kpi.label} {...kpi} value={liveKpiValues[index]} />
             ))}
           </div>
           <div className="mt-8 grid gap-3 xl:grid-cols-[minmax(0,2.1fr)_minmax(290px,1fr)]">
