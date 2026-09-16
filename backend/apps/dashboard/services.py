@@ -6,6 +6,7 @@ from django.utils import timezone
 from apps.expenses.models import Expense
 from apps.findings.models import Finding
 from apps.usage.services import get_saas_inventory
+from .anomaly_service import detect_anomalies
 
 
 def get_dashboard_summary(organization):
@@ -68,6 +69,8 @@ def get_dashboard_summary(organization):
             high_risk_count * 20 + shadow_saas_count * 5,
         )
 
+    anomalies = len(detect_anomalies(organization))
+
     return {
         "total_spend": total_spend,
         "monthly_spend": monthly_spend,
@@ -75,6 +78,6 @@ def get_dashboard_summary(organization):
         "shadow_saas_count": shadow_saas_count,
         "active_tools": active_tools,
         "potential_savings": potential_savings,
-        "anomalies": 0,
+        "anomalies": anomalies,
         "high_risk_findings": high_risk_count,
     }
