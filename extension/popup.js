@@ -5,12 +5,14 @@ const activeView = document.getElementById("active");
 const codeInput = document.getElementById("code");
 const enrollButton = document.getElementById("enroll");
 const errorElement = document.getElementById("error");
+const revokedNotice = document.getElementById("revoked-notice");
 
 async function checkEnrollment() {
   const result = await chrome.storage.local.get([
     "enrollment_id",
     "organization_id",
-    "extension_token"
+    "extension_token",
+    "is_revoked",
   ]);
 
   if (
@@ -20,6 +22,17 @@ async function checkEnrollment() {
   ) {
     enrollmentView.classList.add("hidden");
     activeView.classList.remove("hidden");
+    if (revokedNotice) {
+      revokedNotice.classList.add("hidden");
+    }
+  } else {
+    enrollmentView.classList.remove("hidden");
+    activeView.classList.add("hidden");
+    if (result.is_revoked && revokedNotice) {
+      revokedNotice.classList.remove("hidden");
+    } else if (revokedNotice) {
+      revokedNotice.classList.add("hidden");
+    }
   }
 }
 
@@ -53,9 +66,14 @@ async function enroll() {
     await chrome.storage.local.set({
       enrollment_id: data.enrollment_id,
       organization_id: data.organization_id,
-      extension_token: data.extension_token
+      extension_token: data.extension_token,
+      is_revoked: false,
     });
 
+    if (revokedNotice) {
+      revokedNotice.classList.add("hidden");
+    }
+    codeInput.value = "";
     enrollmentView.classList.add("hidden");
     activeView.classList.remove("hidden");
   } catch (error) {

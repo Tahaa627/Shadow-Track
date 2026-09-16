@@ -29,7 +29,7 @@ async function sendUsageEvent(
   }
 
   try {
-    await fetch(
+    const response = await fetch(
       `${API_URL}/usage/events/`,
       {
         method: "POST",
@@ -49,6 +49,18 @@ async function sendUsageEvent(
         }),
       }
     );
+
+    if (response.status === 401) {
+      console.warn(
+        "ShadowAudit: Enrollment token is invalid or revoked. Clearing credentials."
+      );
+      await chrome.storage.local.remove([
+        "enrollment_id",
+        "organization_id",
+        "extension_token",
+      ]);
+      await chrome.storage.local.set({ is_revoked: true });
+    }
   } catch (error) {
     console.error(
       "ShadowAudit usage error:",

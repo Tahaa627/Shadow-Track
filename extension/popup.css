@@ -86,6 +86,29 @@ button:disabled {
   font-size: 11px;
 }
 
+.revoked-alert {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.revoked-alert strong {
+  display: block;
+  color: #ff7676;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.revoked-alert p {
+  margin: 0;
+  color: #f1b3b3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .status {
   display: flex;
   align-items: center;
