@@ -21,6 +21,13 @@ class UsageEventView(APIView):
 
     def post(self, request):
         enrollment = request.auth
+
+        if enrollment is None:
+            return Response(
+                {"detail": "Valid extension enrollment required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         domain = request.data.get("domain")
         occurred_at = request.data.get("occurred_at")
         duration_seconds = request.data.get(
