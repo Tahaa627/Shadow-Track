@@ -122,3 +122,39 @@ class ExtensionEnrollView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ExtensionEnrollmentRevokeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        organization = getattr(request.user, "organization", None)
+
+        if organization is None:
+            return Response(
+                {"detail": "User is not associated with an organization."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            enrollment = ExtensionEnrollment.objects.get(
+                pk=pk,
+                organization=organization,
+            )
+        except ExtensionEnrollment.DoesNotExist:
+            return Response(
+                {"detail": "Enrollment not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if enrollment.status == ExtensionEnrollment.Status.REVOKED:
+            return Response(
+                {"detail": "Enrollment is already revoked."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        enrollment.status = ExtensionEnrollment.Status.REVOKED
+        enrollment.save(update_fields=["status"])
+
+        serializer = ExtensionEnrollmentSerializer(enrollment)
+        return Response(serializer.data, status=status.HTTP_200_OK)

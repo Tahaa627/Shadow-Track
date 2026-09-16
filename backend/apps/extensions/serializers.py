@@ -6,12 +6,18 @@ from .models import ExtensionEnrollment
 class ExtensionEnrollmentSerializer(
     serializers.ModelSerializer
 ):
+    user_email = serializers.EmailField(
+        source="user.email",
+        read_only=True,
+    )
+
     class Meta:
         model = ExtensionEnrollment
         fields = [
             "id",
             "enrollment_code",
             "status",
+            "user_email",
             "enrolled_at",
             "last_seen",
             "created_at",
