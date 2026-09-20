@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'apps.extensions',
     'apps.usage',
     'apps.findings',
+    'apps.compliance',
 ]
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

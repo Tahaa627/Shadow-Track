@@ -7,6 +7,7 @@ from apps.organizations.serializers import OrganizationSerializer
 
 from .models import User, UserRole
 from .services import register_user
+from apps.compliance.services import record_audit_event
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = "email"
@@ -32,6 +33,13 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             })
 
         data = super().validate({"email": user.email, "password": password})
+        if user.organization_id:
+            record_audit_event(
+                organization=user.organization,
+                actor=user,
+                action="auth.login",
+                request=self.context.get("request"),
+            )
         return data
 
 
@@ -164,9 +172,16 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        return (register_user(
+        user = register_user(
             **validated_data
-        ))
+        )
+        record_audit_event(
+            organization=user.organization,
+            actor=user,
+            action="auth.register",
+            request=self.context.get("request"),
+        )
+        return user
 
 class UserUpdateSerializer(serializers.ModelSerializer):
 

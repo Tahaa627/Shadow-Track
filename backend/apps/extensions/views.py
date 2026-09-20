@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from .models import ExtensionEnrollment
 from .serializers import ExtensionEnrollmentSerializer
+from apps.compliance.services import record_audit_event
 
 
 class ExtensionEnrollmentCreateView(APIView):
@@ -52,6 +53,13 @@ class ExtensionEnrollmentCreateView(APIView):
             enrollment_code=(
                 ExtensionEnrollment.generate_code()
             ),
+        )
+        record_audit_event(
+            organization=organization,
+            actor=request.user,
+            action="extension.enrollment_created",
+            target=enrollment,
+            request=request,
         )
 
         serializer = ExtensionEnrollmentSerializer(
@@ -112,6 +120,13 @@ class ExtensionEnrollView(APIView):
                 "last_seen",
             ]
         )
+        record_audit_event(
+            organization=enrollment.organization,
+            actor=enrollment.user,
+            action="extension.enrolled",
+            target=enrollment,
+            request=request,
+        )
 
         return Response(
             {
@@ -155,6 +170,13 @@ class ExtensionEnrollmentRevokeView(APIView):
 
         enrollment.status = ExtensionEnrollment.Status.REVOKED
         enrollment.save(update_fields=["status"])
+        record_audit_event(
+            organization=organization,
+            actor=request.user,
+            action="extension.revoked",
+            target=enrollment,
+            request=request,
+        )
 
         serializer = ExtensionEnrollmentSerializer(enrollment)
         return Response(serializer.data, status=status.HTTP_200_OK)

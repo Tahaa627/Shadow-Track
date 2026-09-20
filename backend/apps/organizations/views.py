@@ -5,6 +5,7 @@ from .permissions import IsAdminOrManager
 from .selectors import get_user_organizations
 from .serializers import OrganizationSerializer
 from .services import update_organization
+from apps.compliance.services import record_audit_event
 
 
 class OrganizationListView(generics.ListAPIView):
@@ -32,7 +33,14 @@ class OrganizationUpdateView(generics.UpdateAPIView):
         )
 
     def perform_update(self, serializer):
-        update_organization(
+        organization = update_organization(
             organization=serializer.instance,
             **serializer.validated_data,
+        )
+        record_audit_event(
+            organization=organization,
+            actor=self.request.user,
+            action="organization.updated",
+            target=organization,
+            request=self.request,
         )
