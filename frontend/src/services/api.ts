@@ -77,6 +77,44 @@ export async function apiRequest<T>(
   return handleResponse<T>(response);
 }
 
+export async function apiDownload(endpoint: string): Promise<Response> {
+  const response = await makeRequest(
+    endpoint,
+    {},
+    authStorage.getAccessToken(),
+  );
+
+  if (response.status === 401) {
+    try {
+      if (!refreshPromise) {
+        refreshPromise = refreshAccessToken().finally(
+          () => {
+            refreshPromise = null;
+          },
+        );
+      }
+
+      const newAccessToken = await refreshPromise;
+      const retryResponse = await makeRequest(endpoint, {}, newAccessToken);
+
+      if (!retryResponse.ok) {
+        throw new ApiError({ detail: "Report download failed." }, retryResponse.status);
+      }
+
+      return retryResponse;
+    } catch {
+      handleExpiredSession();
+      throw new ApiError({ detail: "Your session has expired." }, 401);
+    }
+  }
+
+  if (!response.ok) {
+    throw new ApiError({ detail: "Report download failed." }, response.status);
+  }
+
+  return response;
+}
+
 function handleExpiredSession() {
   authStorage.clearTokens();
   redirectToLogin();

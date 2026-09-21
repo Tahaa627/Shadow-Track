@@ -86,3 +86,40 @@ class DashboardSummaryViewTests(TestCase):
         self.assertEqual(response.json()["risk_score"], 25)
         self.assertEqual(response.json()["potential_savings"], 25.0)
         self.assertEqual(response.json()["high_risk_findings"], 1)
+
+    def test_report_requires_authentication(self):
+        response = self.client.get("/api/dashboard/report/")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_report_contains_only_organization_expenses(self):
+        Expense.objects.create(
+            organization=self.organization,
+            vendor="Slack",
+            amount="240.00",
+            currency="USD",
+            transaction_date="2026-01-15",
+            description="Annual subscription",
+            department="Engineering",
+        )
+        other_organization = Organization.objects.create(
+            name="Other Inc",
+            slug="other-inc",
+        )
+        Expense.objects.create(
+            organization=other_organization,
+            vendor="Hidden Vendor",
+            amount="999.00",
+            transaction_date="2026-01-15",
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get("/api/dashboard/report/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn(
+            "2026-01-15,Slack,240.00,USD,Annual subscription,,Engineering,",
+            response.content.decode(),
+        )
+        self.assertNotIn("Hidden Vendor", response.content.decode())

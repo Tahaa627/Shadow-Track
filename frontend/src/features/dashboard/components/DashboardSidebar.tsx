@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { downloadExpenseReport } from "@/features/dashboard/api/reportApi";
 
 interface DashboardSidebarProps {
   open: boolean;
@@ -44,10 +46,23 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [reportLoading, setReportLoading] = useState(false);
 
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email.split("@")[0]
     : "User";
+
+  async function handleGenerateReport() {
+    setReportLoading(true);
+
+    try {
+      await downloadExpenseReport();
+    } catch (error) {
+      console.error("Failed to generate report:", error);
+    } finally {
+      setReportLoading(false);
+    }
+  }
 
   return (
     <>
@@ -112,10 +127,12 @@ export default function DashboardSidebar({
         <div className="space-y-4 border-t border-[#212938] pt-5">
           <button
             type="button"
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#d4af37] px-4 py-3 text-sm font-semibold text-[#241a00] transition hover:bg-[#e2c45a] hover:shadow-[0_0_12px_rgba(212,175,55,0.3)]"
+            onClick={handleGenerateReport}
+            disabled={reportLoading}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#d4af37] px-4 py-3 text-sm font-semibold text-[#241a00] transition hover:bg-[#e2c45a] hover:shadow-[0_0_12px_rgba(212,175,55,0.3)] disabled:cursor-wait disabled:opacity-60"
           >
             <BarChart3 size={16} aria-hidden="true" />
-            Generate Report
+            {reportLoading ? "Generating..." : "Generate Report"}
           </button>
 
           <div className="space-y-1 pt-2">

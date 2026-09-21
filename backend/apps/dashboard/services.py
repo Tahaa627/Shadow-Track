@@ -1,3 +1,5 @@
+import csv
+import io
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -8,6 +10,44 @@ from apps.expenses.models import Expense
 from apps.findings.models import Finding
 from apps.usage.services import get_saas_inventory
 from .anomaly_service import detect_anomalies
+
+
+REPORT_COLUMNS = [
+    "transaction_date",
+    "vendor",
+    "amount",
+    "currency",
+    "description",
+    "employee",
+    "department",
+    "source",
+    "created_at",
+]
+
+
+def generate_expense_report(organization):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(REPORT_COLUMNS)
+
+    expenses = Expense.objects.filter(
+        organization=organization,
+    ).order_by("transaction_date", "id")
+
+    for expense in expenses:
+        writer.writerow([
+            expense.transaction_date.isoformat(),
+            expense.vendor,
+            expense.amount,
+            expense.currency,
+            expense.description,
+            expense.employee,
+            expense.department,
+            expense.source,
+            expense.created_at.isoformat(),
+        ])
+
+    return output.getvalue()
 
 
 def get_monthly_spend(organization):
