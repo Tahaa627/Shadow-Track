@@ -184,6 +184,17 @@ class RegisterSerializer(serializers.Serializer):
         return user
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        min_length=8,
+        allow_blank=True,
+    )
 
     class Meta:
         model = User
@@ -192,8 +203,28 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "role",
+            "current_password",
+            "new_password",
         )
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        current_password = attrs.get("current_password")
+
+        if new_password:
+            if not current_password:
+                raise serializers.ValidationError({
+                    "current_password": "Current password is required to change your password.",
+                })
+
+            if not self.instance.check_password(current_password):
+                raise serializers.ValidationError({
+                    "current_password": "Current password is incorrect.",
+                })
+
+            attrs.pop("current_password", None)
+
+        return attrs
 
     def validate_email(self, value):
         user = self.instance
@@ -208,3 +239,23 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def update(self, instance, validated_data):
+        update_fields = []
+
+        for field in ("email", "first_name", "last_name"):
+            value = validated_data.get(field)
+            if value is not None:
+                setattr(instance, field, value)
+                update_fields.append(field)
+
+        if validated_data.get("new_password"):
+            instance.set_password(validated_data["new_password"])
+            update_fields.append("password")
+
+        if update_fields:
+            update_fields.append("updated_at")
+
+        instance.save(update_fields=update_fields)
+
+        return instance

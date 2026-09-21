@@ -117,3 +117,37 @@ class AuthFlowTests(TestCase):
             "No active account found with the given credentials.",
             str(missing_user_response.data),
         )
+
+    def test_me_endpoint_updates_profile_and_password(self):
+        organization = Organization.objects.create(
+            name="Settings Org",
+            slug="settings-org",
+        )
+        user = self.user_model.objects.create_user(
+            email="settings@example.com",
+            password="old-password",
+            organization=organization,
+            first_name="Initial",
+            last_name="User",
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            reverse("me"),
+            {
+                "first_name": "Updated",
+                "last_name": "Name",
+                "email": "updated@example.com",
+                "current_password": "old-password",
+                "new_password": "new-secret-456",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "Updated")
+        self.assertEqual(user.last_name, "Name")
+        self.assertEqual(user.email, "updated@example.com")
+        self.assertTrue(user.check_password("new-secret-456"))
+        self.assertEqual(response.data["email"], "updated@example.com")

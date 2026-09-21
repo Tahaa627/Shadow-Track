@@ -44,9 +44,13 @@ class RegisterView(generics.CreateAPIView):
         )
 
 
-class MeView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+class MeView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return UserUpdateSerializer
+        return UserSerializer
 
     def get_object(self):
         return self.request.user
