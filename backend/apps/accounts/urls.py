@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .serializers import EmailTokenObtainPairSerializer
-from .views import (MeView, RegisterView, UserDetailView)
+from .views import (MeView, RegisterView, UserDetailView, UserListCreateView)
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):
@@ -34,7 +34,12 @@ urlpatterns = [
         MeView.as_view(),
         name="me",
     ),
-        path(
+    path(
+        "users/",
+        UserListCreateView.as_view(),
+        name="user-list-create",
+    ),
+    path(
         "users/<uuid:pk>/",
         UserDetailView.as_view(),
         name="user-detail",

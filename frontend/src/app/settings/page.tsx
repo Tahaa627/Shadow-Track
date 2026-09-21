@@ -4,15 +4,19 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { updateCurrentUser, getCurrentUser } from "@/features/auth/api/me";
+import { getOrganizationUsers } from "@/features/auth/api/users";
 import { useAuth } from "@/hooks/useAuth";
 
+import type { User } from "@/features/auth/types";
+
 export default function SettingsPage() {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -20,10 +24,15 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const user = await getCurrentUser();
-        setFirstName(user.first_name ?? "");
-        setLastName(user.last_name ?? "");
-        setEmail(user.email ?? "");
+        const [currentUser, members] = await Promise.all([
+          getCurrentUser(),
+          getOrganizationUsers(),
+        ]);
+
+        setFirstName(currentUser.first_name ?? "");
+        setLastName(currentUser.last_name ?? "");
+        setEmail(currentUser.email ?? "");
+        setTeamMembers(members);
       } catch {
         setStatus("Unable to load your profile right now.");
       } finally {
@@ -73,15 +82,17 @@ export default function SettingsPage() {
     }
   }
 
+  const organizationName = user?.organization?.name ?? "Your organization";
+
   return (
     <ProtectedRoute>
       <main className="min-h-screen bg-[#0a0d14] px-5 py-16 text-[#f3f4f6] sm:px-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl space-y-8">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#f2ca50]">Account</p>
             <h1 className="mt-3 text-3xl font-bold text-[#f3f4f6]">Settings</h1>
             <p className="mt-2 text-sm text-[#9ba1ad]">
-              Manage your profile details and update your password.
+              Manage your account, workspace profile, and your organization team.
             </p>
           </div>
 
@@ -89,6 +100,16 @@ export default function SettingsPage() {
             onSubmit={handleSubmit}
             className="space-y-6 rounded-2xl border border-[#212938] bg-[#11141d] p-6 shadow-[0_0_0_1px_rgba(33,41,56,0.6)]"
           >
+            <div className="flex items-center justify-between gap-4 border-b border-[#212938] pb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-[#f3f4f6]">Profile</h2>
+                <p className="text-sm text-[#9ba1ad]">Update your personal details.</p>
+              </div>
+              <div className="rounded-full border border-[#384357] bg-[#0d1117] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#f2ca50]">
+                {organizationName}
+              </div>
+            </div>
+
             <div className="grid gap-5 md:grid-cols-2">
               <label className="space-y-2 text-sm text-[#dfe3ea]">
                 <span>First name</span>
@@ -163,6 +184,49 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+
+          <section className="rounded-2xl border border-[#212938] bg-[#11141d] p-6">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-[#f3f4f6]">Organization team</h2>
+                <p className="text-sm text-[#9ba1ad]">Members in {organizationName}</p>
+              </div>
+              <span className="rounded-full border border-[#384357] bg-[#0d1117] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#9ba1ad]">
+                {teamMembers.length} members
+              </span>
+            </div>
+
+            <div className="overflow-hidden rounded-lg border border-[#212938]">
+              <div className="grid grid-cols-[minmax(0,1.25fr)_120px_120px] bg-[#0d1117] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#9ba1ad]">
+                <span>Name</span>
+                <span>Role</span>
+                <span>Email</span>
+              </div>
+
+              {teamMembers.length === 0 ? (
+                <div className="px-4 py-5 text-sm text-[#9ba1ad]">No team members found.</div>
+              ) : (
+                teamMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="grid grid-cols-[minmax(0,1.25fr)_120px_120px] items-center gap-2 border-t border-[#212938] px-4 py-3 text-sm text-[#f3f4f6]"
+                  >
+                    <div>
+                      <div className="font-medium text-[#f3f4f6]">
+                        {[member.first_name, member.last_name].filter(Boolean).join(" ") || "Unnamed user"}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="inline-flex rounded-full border border-[#384357] bg-[#191c26] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#f2ca50]">
+                        {member.role}
+                      </span>
+                    </div>
+                    <div className="text-[#9ba1ad]">{member.email}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
         </div>
       </main>
     </ProtectedRoute>

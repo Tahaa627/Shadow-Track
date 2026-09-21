@@ -151,3 +151,44 @@ class AuthFlowTests(TestCase):
         self.assertEqual(user.email, "updated@example.com")
         self.assertTrue(user.check_password("new-secret-456"))
         self.assertEqual(response.data["email"], "updated@example.com")
+
+    def test_users_endpoint_lists_only_current_organization_members(self):
+        organization = Organization.objects.create(
+            name="Team Org",
+            slug="team-org",
+        )
+        other_organization = Organization.objects.create(
+            name="Other Org",
+            slug="other-org",
+        )
+        admin = self.user_model.objects.create_user(
+            email="admin-team@example.com",
+            password="secret123",
+            organization=organization,
+            first_name="Team",
+            last_name="Admin",
+            role="ADMIN",
+        )
+        self.user_model.objects.create_user(
+            email="member-team@example.com",
+            password="secret123",
+            organization=organization,
+            first_name="Team",
+            last_name="Member",
+        )
+        self.user_model.objects.create_user(
+            email="external@example.com",
+            password="secret123",
+            organization=other_organization,
+        )
+
+        self.client.force_authenticate(user=admin)
+
+        response = self.client.get(reverse("user-list-create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(
+            {user["email"] for user in response.data},
+            {"admin-team@example.com", "member-team@example.com"},
+        )
